@@ -1,0 +1,26 @@
+# Secrets — never commit tokens or API keys
+.env
+.env.*
+*.pem
+credentials.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Build / packaging
+*.zip
+dist/
+build/
+
+# Local-only copies
+canvas-proxy (1).py
