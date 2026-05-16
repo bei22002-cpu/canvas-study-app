@@ -1,0 +1,2985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Canvas Study App</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script src="panel-boot.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#1a2744;--cream:#f7f5f0;--surface:#fff;--soft:#f0ede6;--border:#e2ddd6;--border2:#d0cac0;--text:#1a2744;--muted:#6b7280;--muted2:#9ca3af;--rust:#e53e3e;--gold:#d4a017;--green:#059669}
+body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--cream);min-height:100vh;display:flex;flex-direction:column}
+html.cs-ext-panel,html.cs-ext-panel body{height:100%;overflow:hidden}
+/* HEADER */
+.app-header{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;height:54px;flex-shrink:0}
+.app-logo{display:flex;align-items:center;gap:10px;margin-right:2rem}
+.logo-mark{width:30px;height:30px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Lora',serif;font-weight:500;color:var(--navy);font-size:13px}
+.logo-text{color:#fff;font-size:15px;font-weight:500}
+.nav-tabs{display:flex;height:54px}
+.nav-tab{padding:0 1.1rem;color:rgba(255,255,255,0.5);font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all 0.15s;display:flex;align-items:center;gap:6px}
+.nav-tab:hover{color:rgba(255,255,255,0.85)}
+.nav-tab.active{color:#fff;border-bottom-color:var(--gold)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#10b981}
+.status-dot.loading{background:var(--gold);animation:pulse 1s infinite}
+.status-dot.off{background:var(--muted2)}
+.user-chip{font-size:12px;color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.08);padding:4px 10px;border-radius:100px;cursor:pointer;border:none;transition:all 0.15s}
+.user-chip:hover{background:rgba(255,255,255,0.15);color:#fff}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* PAGES */
+.page{display:none;flex:1;flex-direction:column;overflow:hidden}
+.page.active{display:flex}
+/* SETUP */
+.setup-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}
+.setup-card{background:var(--surface);border:0.5px solid var(--border);border-radius:16px;padding:2rem;width:100%;max-width:460px}
+.setup-h{font-family:'Lora',serif;font-size:21px;font-weight:400;color:var(--navy);margin-bottom:0.4rem}
+.setup-sub{font-size:13px;color:var(--muted);margin-bottom:1.25rem;line-height:1.6}
+.notice{background:#fffbeb;border:0.5px solid #f59e0b;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400e;margin-bottom:1.25rem;line-height:1.6}
+.notice code{font-family:monospace;background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:4px}
+.field{margin-bottom:0.9rem}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase}
+.field input{width:100%;padding:9px 11px;border:0.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);background:var(--soft);outline:none;transition:border-color 0.15s}
+.field input:focus{border-color:var(--navy);background:#fff}
+.field .hint{font-size:11px;color:var(--muted);margin-top:3px}
+.field .hint a{color:var(--navy)}
+.remember-row{display:flex;align-items:center;gap:8px;margin-bottom:1rem;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+.remember-row input[type=checkbox]{width:auto;accent-color:var(--navy);cursor:pointer}
+.connect-btn{width:100%;padding:11px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:opacity 0.15s}
+.connect-btn:hover{opacity:0.88}
+.connect-btn:disabled{opacity:0.5;cursor:not-allowed}
+.err-msg{font-size:12px;color:var(--rust);margin-top:8px;padding:8px 10px;background:#fef2f2;border-radius:6px;display:none}
+.saved-badge{display:none;align-items:center;gap:6px;font-size:12px;color:var(--green);background:#ecfdf5;border:0.5px solid #a7f3d0;border-radius:6px;padding:6px 10px;margin-bottom:1rem}
+/* MAIN LAYOUT */
+.main-layout{display:flex;flex:1;overflow:hidden;min-height:0}
+.sidebar{width:200px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sidebar-section{padding:0.9rem 1rem 0.4rem;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase}
+.course-item{padding:7px 1rem;font-size:13px;color:var(--navy);cursor:pointer;border-left:3px solid transparent;transition:background 0.1s;display:flex;align-items:center;gap:8px}
+.course-item:hover{background:var(--soft)}
+.course-item.active{background:var(--soft);font-weight:500}
+.course-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.cname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.ccode{font-size:10px;color:var(--muted);margin-top:1px}
+.content-area{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+/* CHAT */
+.chat-banner{padding:0.65rem 1.25rem;background:var(--soft);border-bottom:0.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.bname{font-size:14px;font-weight:500;color:var(--navy)}
+.bcode{font-size:11px;color:var(--muted)}
+.tool-badges{display:flex;gap:6px}
+.badge{font-size:10px;padding:2px 8px;border-radius:100px;font-weight:500}
+.badge.canvas{background:#e8f0fe;color:#1a56db}
+.badge.web{background:#e8faf0;color:#0f766e}
+.messages{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem}
+.msg{max-width:88%;display:flex;flex-direction:column;gap:4px}
+.msg.user{align-self:flex-end;align-items:flex-end}
+.msg.ai{align-self:flex-start;align-items:flex-start}
+.bubble{padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.msg.user .bubble{background:var(--navy);color:#fff;border-bottom-right-radius:3px}
+.msg.ai .bubble{background:var(--surface);border:0.5px solid var(--border);color:var(--text);border-bottom-left-radius:3px}
+.tool-pill{font-size:11px;padding:3px 10px;border-radius:100px;border:0.5px solid;display:inline-block;margin:1px 0}
+.tool-pill.canvas-tool{color:#1a56db;background:#e8f0fe;border-color:#c3d7fe}
+.tool-pill.web-tool{color:#0f766e;background:#e8faf0;border-color:#a7f3d0}
+.typing{display:flex;gap:4px;align-items:center;padding:12px 14px}
+.typing span{width:5px;height:5px;background:var(--muted);border-radius:50%;animation:bounce 1.2s infinite}
+.typing span:nth-child(2){animation-delay:0.2s}
+.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+.input-bar{padding:0.75rem 1rem;border-top:0.5px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:var(--surface)}
+.input-bar textarea{flex:1;border:0.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);background:var(--soft);resize:none;outline:none;height:40px;max-height:120px;line-height:1.5;transition:border-color 0.15s}
+.input-bar textarea:focus{border-color:var(--navy);background:#fff}
+.send-btn{width:40px;height:40px;border-radius:8px;border:none;background:var(--navy);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity 0.15s}
+.send-btn:hover{opacity:0.85}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:0.9rem;color:var(--muted);text-align:center;padding:2rem}
+.empty-icon{font-size:30px}
+.empty-state p{font-size:13px;max-width:280px;line-height:1.6}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.chip{padding:5px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:100px;font-size:12px;color:var(--navy);cursor:pointer;transition:background 0.1s}
+.chip:hover{background:var(--soft)}
+.info-bar{background:var(--navy);color:rgba(255,255,255,0.6);font-size:11px;padding:5px 1.25rem;flex-shrink:0}
+.info-bar span{color:#fff;font-weight:500}
+/* CALENDAR */
+.cal-page{display:flex;flex:1;overflow:hidden;min-height:0}
+.cal-sidebar{width:200px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;padding:1rem}
+.cal-sidebar-title{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.75rem}
+.cal-course-row{display:flex;align-items:center;gap:7px;margin-bottom:0.5rem;font-size:12px;color:var(--navy);overflow:hidden}
+.cal-course-row input[type=checkbox]{accent-color:var(--navy);cursor:pointer;flex-shrink:0}
+.color-swatch{width:14px;height:14px;border-radius:50%;flex-shrink:0;position:relative;border:2px solid rgba(0,0,0,0.1);cursor:pointer}
+.color-swatch input[type=color]{position:absolute;opacity:0;inset:0;cursor:pointer;padding:0;border:none;width:100%;height:100%}
+.cal-course-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;flex:1}
+.cal-export-section{margin-top:auto;padding-top:1rem;border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:7px}
+.export-btn{padding:8px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.15s;text-align:left;width:100%}
+.export-btn:hover{background:var(--border2)}
+.cal-main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.cal-header{padding:0.9rem 1.25rem;background:var(--surface);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:1rem;flex-shrink:0}
+.cal-nav{display:flex;align-items:center;gap:8px}
+.cal-nav button{width:28px;height:28px;border-radius:6px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background 0.1s}
+.cal-nav button:hover{background:var(--border)}
+.cal-month-label{font-size:15px;font-weight:600;color:var(--navy);min-width:155px;text-align:center}
+.cal-view-toggle{display:flex;border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
+.cal-view-btn{padding:5px 12px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:var(--soft);color:var(--muted);transition:all 0.1s}
+.cal-view-btn.active{background:var(--navy);color:#fff}
+.cal-today-btn{padding:5px 12px;border:0.5px solid var(--border);border-radius:6px;background:var(--soft);color:var(--navy);font-size:12px;font-weight:500;cursor:pointer;transition:background 0.1s}
+.cal-today-btn:hover{background:var(--border)}
+.cal-grid-wrap{flex:1;overflow-y:auto;padding:1rem 1.25rem}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border:0.5px solid var(--border);border-radius:10px;overflow:hidden}
+.cal-day-hdr{background:var(--soft);padding:8px 4px;text-align:center;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;border-bottom:0.5px solid var(--border);border-right:0.5px solid var(--border)}
+.cal-day-hdr:last-child{border-right:none}
+.cal-day{min-height:90px;padding:5px;border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);background:var(--surface)}
+.cal-day:nth-child(7n){border-right:none}
+.cal-day.other-month{background:var(--soft);opacity:0.65}
+.cal-day.today .day-num{background:var(--navy);color:#fff;border-radius:50%}
+.day-num{font-size:11px;font-weight:500;color:var(--navy);margin-bottom:3px;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
+.day-event{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;cursor:pointer;line-height:1.4}
+.day-event:hover{opacity:0.82}
+.day-more{font-size:9px;color:var(--muted);padding:1px 3px;cursor:pointer}
+.day-more:hover{color:var(--navy)}
+/* LIST VIEW */
+.cal-list{display:flex;flex-direction:column}
+.list-date-hdr{padding:7px 0.9rem;background:var(--soft);font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;position:sticky;top:0;border-bottom:0.5px solid var(--border)}
+.list-event-row{padding:9px 0.9rem;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background 0.1s}
+.list-event-row:hover{background:var(--soft)}
+.list-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.list-info{flex:1;min-width:0}
+.list-name{font-size:13px;color:var(--navy);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-course{font-size:11px;color:var(--muted);margin-top:1px}
+.list-time{font-size:11px;color:var(--muted);flex-shrink:0}
+.list-pts{font-size:11px;background:var(--soft);color:var(--navy);padding:2px 7px;border-radius:100px;flex-shrink:0;border:0.5px solid var(--border)}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.28);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:14px;padding:1.5rem;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.15);margin:1rem;position:relative}
+.modal-title{font-size:16px;font-weight:600;color:var(--navy);margin-bottom:0.3rem;padding-right:2rem}
+.modal-course-line{font-size:12px;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:6px}
+.modal-body{font-size:13px;color:var(--text);line-height:1.7;margin-bottom:1.25rem}
+.modal-body .row{margin-bottom:0.3rem}
+.modal-body strong{color:var(--navy)}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap}
+.modal-btn{padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.1s;text-decoration:none}
+.modal-btn:hover{background:var(--border)}
+.modal-btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.modal-btn.primary:hover{opacity:0.88}
+.modal-close{position:absolute;top:1rem;right:1rem;width:26px;height:26px;border-radius:50%;border:none;background:var(--soft);color:var(--muted);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--border)}
+/* SETTINGS */
+.settings-wrap{flex:1;overflow-y:auto;padding:2rem;display:flex;flex-direction:column;align-items:center}
+.settings-card{background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.5rem;width:100%;max-width:480px;margin-bottom:1rem}
+.settings-card h3{font-size:15px;font-weight:600;color:var(--navy);margin-bottom:0.2rem}
+.settings-card p{font-size:12px;color:var(--muted);margin-bottom:1rem;line-height:1.6}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.settings-row:last-child{border-bottom:none}
+.settings-row label{font-size:13px;color:var(--navy)}
+.settings-row small{font-size:11px;color:var(--muted);display:block}
+.danger-btn{padding:7px 13px;border-radius:7px;border:0.5px solid var(--rust);color:var(--rust);background:transparent;font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer;transition:background 0.15s}
+.danger-btn:hover{background:#fef2f2}
+.color-settings-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border)}
+.color-settings-row:last-child{border-bottom:none}
+.color-settings-row label{font-size:13px;color:var(--navy);display:flex;align-items:center;gap:8px}
+
+/* ── PLANNER ── */
+.planner-wrap{display:flex;flex:1;flex-direction:column;overflow:hidden;min-height:0}
+.planner-toolbar{padding:0.75rem 1.25rem;background:var(--surface);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:1rem;flex-shrink:0;flex-wrap:wrap}
+.planner-nav{display:flex;align-items:center;gap:8px}
+.planner-nav button{width:28px;height:28px;border-radius:6px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background 0.1s}
+.planner-nav button:hover{background:var(--border)}
+.planner-week-label{font-size:14px;font-weight:600;color:var(--navy);min-width:200px;text-align:center}
+.planner-this-week{padding:5px 12px;border:0.5px solid var(--border);border-radius:6px;background:var(--soft);color:var(--navy);font-size:12px;font-weight:500;cursor:pointer;transition:background 0.1s}
+.planner-this-week:hover{background:var(--border)}
+.planner-view-toggle{display:flex;border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
+.planner-view-btn{padding:5px 12px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:var(--soft);color:var(--muted);transition:all 0.1s}
+.planner-view-btn.active{background:var(--navy);color:#fff}
+.planner-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0}
+
+/* GRID */
+.grid-section{flex-shrink:0;padding:0 1.25rem 1rem}
+.grid-outer{overflow-x:auto}
+.planner-grid{display:grid;grid-template-columns:52px repeat(7,1fr);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;min-width:600px}
+.grid-corner{background:var(--soft);border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);padding:6px 4px;display:flex;align-items:center;justify-content:center}
+.grid-day-hdr{background:var(--soft);border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);padding:6px 4px;text-align:center}
+.grid-day-hdr:last-child{border-right:none}
+.grid-day-name{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase}
+.grid-day-date{font-size:13px;font-weight:600;color:var(--navy);margin-top:1px}
+.grid-day-hdr.today-col .grid-day-date{background:var(--navy);color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin:2px auto 0}
+.time-label{background:var(--soft);border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);padding:0 4px;display:flex;align-items:flex-start;justify-content:flex-end;padding-top:2px}
+.time-label span{font-size:9px;color:var(--muted);white-space:nowrap;letter-spacing:0.03em}
+.time-label.hour-mark{background:#faf8f4}
+.grid-cell{border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);min-height:28px;position:relative;cursor:pointer;transition:background 0.08s}
+.grid-cell:nth-child(7n+1){border-right:none}
+.grid-cell:hover{background:rgba(26,39,68,0.04)}
+.grid-cell.hour-mark{border-bottom-color:var(--border2)}
+.grid-cell.today-col{background:rgba(26,39,68,0.02)}
+.cell-block{position:absolute;inset:1px 2px;border-radius:4px;padding:2px 4px;font-size:10px;color:#fff;overflow:hidden;cursor:pointer;z-index:2;line-height:1.3}
+.cell-block:hover{opacity:0.88;z-index:3}
+.cell-block .cb-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell-block .cb-course{font-size:9px;opacity:0.85}
+
+/* HOURS CALCULATOR */
+.hours-calc{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;margin:0 1.25rem 1rem;padding:1rem}
+.hours-calc-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.75rem}
+.hours-row{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;font-size:13px;color:var(--navy)}
+.hours-row input{width:52px;padding:4px 6px;border:0.5px solid var(--border);border-radius:6px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--navy);background:var(--soft);text-align:center;outline:none}
+.hours-row input:focus{border-color:var(--navy);background:#fff}
+.hours-result{font-weight:600;color:var(--green);margin-left:0.25rem}
+.hours-result.low{color:var(--rust)}
+
+/* TID SECTION */
+.tid-section{padding:0 1.25rem 1.5rem;flex-shrink:0}
+.tid-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.75rem}
+.tid-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;min-width:600px}
+.tid-card{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.tid-card-hdr{padding:6px 8px;font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;justify-content:space-between}
+.tid-card-date{font-size:9px;opacity:0.85;font-weight:400}
+.tid-tasks{padding:6px 8px;flex:1}
+.tid-tasks-label{font-size:9px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px}
+.tid-task-row{display:flex;align-items:center;gap:4px;margin-bottom:3px}
+.tid-task-row input[type=checkbox]{accent-color:var(--navy);cursor:pointer;flex-shrink:0}
+.tid-task-text{flex:1;font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.tid-task-text.done{text-decoration:line-through;color:var(--muted2)}
+.tid-priority{font-size:9px;font-weight:700;width:14px;text-align:center;flex-shrink:0;border-radius:3px;padding:1px 0}
+.tid-priority.A{background:#fee2e2;color:#dc2626}
+.tid-priority.B{background:#fef3c7;color:#d97706}
+.tid-priority.C{background:#d1fae5;color:#059669}
+.tid-add-row{display:flex;gap:4px;margin-top:4px}
+.tid-add-inp{flex:1;padding:3px 6px;border:0.5px solid var(--border);border-radius:5px;font-family:'Outfit',sans-serif;font-size:11px;color:var(--text);background:var(--soft);outline:none;min-width:0}
+.tid-add-inp:focus{border-color:var(--navy);background:#fff}
+.tid-priority-sel{padding:3px 4px;border:0.5px solid var(--border);border-radius:5px;font-family:'Outfit',sans-serif;font-size:11px;color:var(--text);background:var(--soft);outline:none;cursor:pointer}
+.tid-add-btn{width:22px;height:22px;border-radius:5px;border:none;background:var(--navy);color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tid-reflection{padding:6px 8px;border-top:0.5px solid var(--border)}
+.tid-reflection-label{font-size:9px;font-weight:600;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px}
+.tid-reflection textarea{width:100%;resize:none;border:0.5px solid var(--border);border-radius:5px;padding:4px 6px;font-family:'Outfit',sans-serif;font-size:10px;color:var(--text);background:var(--soft);outline:none;line-height:1.4;height:52px}
+.tid-reflection textarea:focus{border-color:var(--navy);background:#fff}
+.tid-outer{overflow-x:auto}
+
+/* BLOCK EDITOR MODAL */
+.block-modal{background:var(--surface);border-radius:14px;padding:1.5rem;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.15);margin:1rem;position:relative}
+.block-modal h3{font-size:15px;font-weight:600;color:var(--navy);margin-bottom:1rem}
+.block-modal .field{margin-bottom:0.75rem}
+.block-modal .field label{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;display:block;letter-spacing:0.05em;text-transform:uppercase}
+.block-modal .field input,.block-modal .field select,.block-modal .field textarea{width:100%;padding:7px 10px;border:0.5px solid var(--border);border-radius:7px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--text);background:var(--soft);outline:none}
+.block-modal .field input:focus,.block-modal .field select:focus,.block-modal .field textarea:focus{border-color:var(--navy);background:#fff}
+.block-modal-actions{display:flex;gap:8px;margin-top:1rem}
+.bm-btn{flex:1;padding:8px;border-radius:7px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:background 0.1s}
+.bm-btn:hover{background:var(--border)}
+.bm-btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.bm-btn.primary:hover{opacity:0.88}
+.bm-btn.danger{color:var(--rust);border-color:var(--rust)}
+.bm-btn.danger:hover{background:#fef2f2}
+
+
+/* RENDERED CHAT MESSAGES */
+.bubble a{color:#60a5fa;text-decoration:underline}
+.msg.user .bubble a{color:#bfdbfe}
+.bubble.rendered{white-space:normal}
+.bubble.rendered p{margin-bottom:0.6rem;line-height:1.6}
+.bubble.rendered p:last-child{margin-bottom:0}
+.bubble.rendered strong,.bubble.rendered b{font-weight:600}
+.bubble.rendered em{font-style:italic}
+.bubble.rendered ul,.bubble.rendered ol{padding-left:1.25rem;margin-bottom:0.5rem}
+.bubble.rendered li{margin-bottom:0.25rem;line-height:1.5}
+.bubble.rendered h3{font-size:14px;font-weight:600;margin:0.5rem 0 0.3rem}
+.bubble.rendered .link-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:500;text-decoration:none;margin:2px 2px;border:0.5px solid;transition:opacity 0.1s}
+.bubble.rendered .link-btn:hover{opacity:0.82}
+.bubble.rendered .link-btn.submit{background:#ecfdf5;border-color:#a7f3d0;color:#059669}
+.bubble.rendered .link-btn.view{background:#e8f0fe;border-color:#c3d7fe;color:#1a56db}
+.bubble.rendered .link-btn.file{background:#fef3c7;border-color:#fcd34d;color:#d97706}
+.bubble.rendered .link-btn.page{background:#f3e8ff;border-color:#d8b4fe;color:#7c3aed}
+.bubble.rendered .assignment-card{border:0.5px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px;background:var(--soft)}
+.bubble.rendered .assignment-card .ac-title{font-weight:600;margin-bottom:2px;color:var(--navy)}
+.bubble.rendered .assignment-card .ac-meta{font-size:11px;color:var(--muted);margin-bottom:5px}
+.bubble.rendered .ac-links{display:flex;gap:5px;flex-wrap:wrap}
+.bubble.rendered code{font-family:monospace;background:rgba(0,0,0,0.06);padding:1px 4px;border-radius:4px;font-size:12px}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+/* MATERIALS & LIBRARY & TUTOR */
+.mat-toolbar{padding:0.65rem 1rem;border-bottom:0.5px solid var(--border);display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface)}
+.mat-toolbar input[type=search]{flex:1;min-width:160px;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--soft)}
+.mat-filters{display:flex;flex-wrap:wrap;gap:6px}
+.mat-filter-btn{padding:5px 11px;border-radius:100px;border:0.5px solid var(--border);background:var(--soft);font-size:12px;cursor:pointer;color:var(--muted)}
+.mat-filter-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.mat-split{display:flex;flex:1;min-height:0;overflow:hidden}
+.mat-grid{flex:1;overflow-y:auto;padding:1rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-content:start}
+.modules-panel{width:280px;flex-shrink:0;border-left:0.5px solid var(--border);overflow-y:auto;padding:0.75rem;background:var(--soft);display:none}
+.modules-panel.open{display:block}
+.mod-h{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin:0.5rem 0 0.25rem}
+.mod-block{border:0.5px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface);overflow:hidden}
+.mod-name{padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.mod-items{display:none;padding:0 4px 6px 8px;font-size:11px}
+.mod-block.expanded .mod-items{display:block}
+.mod-item{padding:4px 0;cursor:pointer;color:var(--navy);border-bottom:0.5px solid var(--border)}
+.mod-item:last-child{border-bottom:none}
+.file-card,.mat-card{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:10px;cursor:pointer;transition:background 0.1s}
+.file-card:hover,.mat-card:hover{background:var(--soft)}
+.file-card-icon{font-size:22px;margin-bottom:4px}
+.file-card-name{font-size:12px;font-weight:600;color:var(--navy);line-height:1.3}
+.file-card-meta{font-size:10px;color:var(--muted);margin-top:3px}
+.file-empty{grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)}
+.content-viewer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:150;align-items:center;justify-content:center;overflow-y:auto;padding:12px}
+.content-viewer-overlay.open{display:flex}
+.content-viewer-panel{background:var(--surface);border-radius:14px;width:100%;max-width:880px;max-height:92vh;margin:auto;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.18);position:relative}
+.cv-head{padding:1rem 3rem 0.25rem 1rem;border-bottom:0.5px solid var(--border)}
+#fvTitle{font-size:16px;font-weight:600;color:var(--navy)}
+.cv-badge{font-size:10px;padding:2px 8px;border-radius:100px;background:var(--soft);color:var(--muted);margin-left:6px;vertical-align:middle}
+.cv-meta{font-size:11px;color:var(--muted);padding:0.5rem 1rem;line-height:1.5;border-bottom:0.5px solid var(--border)}
+.cv-body-scroll{flex:1;overflow-y:auto;padding:1rem;min-height:120px}
+.cv-body-scroll .file-content-view img{max-width:100%;height:auto}
+.cv-actions{display:flex;flex-wrap:wrap;gap:8px;padding:0.75rem 1rem;border-top:0.5px solid var(--border);background:var(--soft)}
+.god-banner{background:#7c3aed;color:#fff;font-size:12px;padding:6px 10px;border-radius:6px;margin-bottom:8px}
+.tutor-tools{display:flex;flex-wrap:wrap;gap:8px;padding:0.5rem 1rem;border-bottom:0.5px solid var(--border);background:var(--soft);font-size:12px;align-items:center}
+.tutor-pins{display:flex;flex-wrap:wrap;gap:4px;max-height:72px;overflow-y:auto;padding:6px 0}
+.tutor-pin{background:#eef2ff;border:0.5px solid #c7d2fe;border-radius:100px;padding:2px 8px;font-size:11px;display:flex;align-items:center;gap:4px}
+.tutor-pin button{border:none;background:none;cursor:pointer;color:var(--rust);padding:0 2px}
+.library-toolbar{padding:8px;border-bottom:0.5px solid var(--border);display:flex;flex-wrap:wrap;gap:8px}
+.small-btn{padding:5px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--soft);font-size:11px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="app-logo">
+    <div class="logo-mark">Cv</div>
+    <span class="logo-text">Canvas Study</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-page="chatPage" onclick="showPage('chatPage',this)" id="tabChat">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h12a1 1 0 011 1v8a1 1 0 01-1 1H5l-3 3V3a1 1 0 011-1z"/></svg>
+      AI Assistant
+    </button>
+    <button class="nav-tab" data-page="calPage" onclick="showPage('calPage',this)" id="tabCal">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M5 1v1H2a1 1 0 00-1 1v11a1 1 0 001 1h12a1 1 0 001-1V3a1 1 0 00-1-1h-3V1h-1v1H6V1H5zm-3 4h12v8H2V5z"/></svg>
+      Calendar
+    </button>
+    <button class="nav-tab" data-page="filesPage" onclick="showPage('filesPage',this);initMaterialsPage()" id="tabMaterials">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2a2 2 0 012-2h5.586A2 2 0 0111 .586L13.414 3A2 2 0 0114 4.414V14a2 2 0 01-2 2H4a2 2 0 01-2-2V2zm7 0v3h3L9 2z"/></svg>
+      Materials
+    </button>
+    <button class="nav-tab" data-page="libraryPage" onclick="showPage('libraryPage',this);refreshLibraryList()" id="tabLibrary">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M4 1h8v2H4V1zM2 4h12v10a2 2 0 01-2 2H4a2 2 0 01-2-2V4zm3 2v8h6V6H5z"/></svg>
+      My Library
+    </button>
+    <button class="nav-tab" data-page="tutorPage" onclick="showPage('tutorPage',this)" id="tabTutor">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a5 5 0 00-3 9v3l3 1 3-1v-3a5 5 0 00-3-9z"/></svg>
+      Study Tutor
+    </button>
+    <button class="nav-tab" data-page="plannerPage" onclick="showPage('plannerPage',this);initPlanner()" id="tabPlanner">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1H2a1 1 0 01-1-1V2zm2 2v8h10V4H3zm1 1h2v2H4V5zm4 0h2v2H8V5zm-4 4h2v2H4V9zm4 0h2v2H8V9z"/></svg>
+      Weekly Planner
+    </button>
+    <button class="nav-tab" data-page="settingsPage" onclick="showPage('settingsPage',this)" id="tabSettings">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M7.5 1a6.5 6.5 0 100 13A6.5 6.5 0 007.5 1zm0 4a2.5 2.5 0 110 5 2.5 2.5 0 010-5z"/></svg>
+      Settings
+    </button>
+  </div>
+  <div class="header-right">
+    <div class="status-dot off" id="dot"></div>
+    <button class="user-chip" id="userChip" style="display:none" onclick="showPage('settingsPage',document.getElementById('tabSettings'))"></button>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div class="page active" id="setupPage">
+  <div class="setup-wrap">
+    <div class="setup-card">
+      <div class="setup-h">Connect to Canvas</div>
+      <div class="setup-sub">Enter your credentials below. Check "Remember me" and you won't need to log in again on this device.</div>
+      <div class="notice" id="extNotice">Extension mode — no local proxy. Your Canvas domain is filled from this site. Add your API token and Anthropic key, then connect.</div>
+      <div class="saved-badge" id="savedBadge">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="#059669"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.7 5.7l-4 4a.75.75 0 01-1.06 0l-2-2a.75.75 0 011.06-1.06l1.47 1.47 3.47-3.47a.75.75 0 011.06 1.06z"/></svg>
+        Saved credentials found — connecting…
+      </div>
+      <div class="field">
+        <label>Canvas Domain</label>
+        <input type="text" id="domain" placeholder="byui.instructure.com"/>
+        <div class="hint">Your school's Canvas URL without https://</div>
+      </div>
+      <div class="field">
+        <label>Canvas Access Token</label>
+        <input type="password" id="token" placeholder="Paste your Canvas API token"/>
+        <div class="hint">Account → Settings → New Access Token</div>
+      </div>
+      <div class="field">
+        <label>Anthropic API Key</label>
+        <input type="password" id="anthropicKey" placeholder="sk-ant-…"/>
+        <div class="hint">Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+      </div>
+      <label class="remember-row">
+        <input type="checkbox" id="rememberMe" checked/>
+        Remember my credentials on this device
+      </label>
+      <button class="connect-btn" id="connectBtn" onclick="connect()">Connect to Canvas</button>
+      <div class="err-msg" id="errMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="page" id="chatPage">
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="sidebar-section">Courses</div>
+      <div id="courseList"></div>
+    </div>
+    <div class="content-area">
+      <div class="chat-banner">
+        <div><div class="bname" id="bannerName">All Courses</div><div class="bcode" id="bannerCode">Ask anything about your courses</div></div>
+        <div class="tool-badges"><div class="badge canvas">Canvas Live</div><div class="badge web">Web</div></div>
+      </div>
+      <div class="messages" id="messages">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">🎓</div>
+          <p>Claude has live access to your Canvas account and the web. Ask about assignments, grades, submissions, or any course topic.</p>
+          <div class="chips">
+            <div class="chip" onclick="quickAsk('What assignments have I already submitted?')">Submitted work</div>
+            <div class="chip" onclick="quickAsk('What are my current grades?')">My grades</div>
+            <div class="chip" onclick="quickAsk('What is due in the next 7 days?')">Due this week</div>
+            <div class="chip" onclick="quickAsk('Any missing assignments?')">Missing work</div>
+            <div class="chip" onclick="quickAsk('What is saved in my Library — search summaries of my textbooks and snapshots.')">Saved Library</div>
+            <div class="chip" onclick="quickAsk('Show me all my assignments with links to submit them.')">Submit assignments</div>
+          </div>
+        </div>
+      </div>
+      <div class="input-bar">
+        <textarea id="chatInput" placeholder="Ask anything about your courses…" onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="send()">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 8L14 2L8 14L7 9L2 8Z" fill="white" stroke="white" stroke-width="1" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="info-bar" id="infoBar" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR -->
+<div class="page" id="calPage">
+  <div class="cal-page">
+    <div class="cal-sidebar">
+      <div class="cal-sidebar-title">Courses</div>
+      <div id="calCourseFilters"></div>
+      <div class="cal-export-section">
+        <div class="cal-sidebar-title" style="margin-bottom:0.5rem">Export Calendar</div>
+        <button class="export-btn" onclick="exportICS('all')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v9m-3-3l3 3 3-3M2 13h12"/></svg>
+          Download .ics — All
+        </button>
+        <button class="export-btn" onclick="exportICS('visible')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v9m-3-3l3 3 3-3M2 13h12"/></svg>
+          Download .ics — Selected
+        </button>
+        <button class="export-btn" onclick="openGCalBulk()">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#4285f4" stroke-width="1.5"><rect x="1" y="2" width="14" height="13" rx="1"/><path d="M5 1v2m6-2v2M1 6h14"/></svg>
+          Open in Google Cal
+        </button>
+        <button class="export-btn" onclick="exportICS('apple')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M11.182 2c.11.546-.07 1.1-.41 1.56-.34.45-.9.8-1.47.76-.1-.55.1-1.08.44-1.53.35-.46.93-.8 1.44-.79zm2.27 5.44c-.99.3-1.66 1.15-1.61 2.2.05.95.62 1.8 1.5 2.18-.2.6-.48 1.15-.82 1.62-.5.7-1.01 1.4-1.8 1.41-.77.01-1.01-.45-1.89-.45-.88 0-1.15.44-1.88.46-.77.02-1.35-.7-1.86-1.4C4.37 11.9 3.6 10 3.6 8.18c0-1.98.9-3.02 2.08-3.07.76-.03 1.48.5 1.94.5.47 0 1.35-.62 2.27-.53.39.02 1.48.16 2.18 1.2l-.65.16z"/></svg>
+          Apple Calendar (.ics)
+        </button>
+      </div>
+    </div>
+    <div class="cal-main">
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button onclick="changeMonth(-1)">&#8592;</button>
+          <div class="cal-month-label" id="calMonthLabel"></div>
+          <button onclick="changeMonth(1)">&#8594;</button>
+        </div>
+        <button class="cal-today-btn" onclick="goToday()">Today</button>
+        <div class="cal-view-toggle">
+          <button class="cal-view-btn active" id="viewMonth" onclick="setView('month')">Month</button>
+          <button class="cal-view-btn" id="viewList" onclick="setView('list')">List</button>
+        </div>
+      </div>
+      <div class="cal-grid-wrap" id="calGridWrap">
+        <div style="padding:2rem;text-align:center;color:var(--muted);font-size:13px">Connect to Canvas to load your assignments.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MATERIALS -->
+<div class="page" id="filesPage">
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="sidebar-section">Courses</div>
+      <div id="filesCourseList"></div>
+    </div>
+    <div class="content-area" style="min-height:0">
+      <div class="mat-toolbar">
+        <input type="search" id="filesSearch" placeholder="Search materials…" oninput="filterMaterials()" style="flex:1;min-width:140px;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--soft)"/>
+        <div class="mat-filters" id="matFilters">
+          <button type="button" class="mat-filter-btn active" data-mf="all" onclick="setMatFilter('all',this)">All</button>
+          <button type="button" class="mat-filter-btn" data-mf="assignment" onclick="setMatFilter('assignment',this)">Assignments</button>
+          <button type="button" class="mat-filter-btn" data-mf="quiz" onclick="setMatFilter('quiz',this)">Quizzes &amp; exams</button>
+          <button type="button" class="mat-filter-btn" data-mf="file" onclick="setMatFilter('file',this)">Files</button>
+          <button type="button" class="mat-filter-btn" data-mf="page" onclick="setMatFilter('page',this)">Pages</button>
+          <button type="button" class="mat-filter-btn" data-mf="modules" onclick="setMatFilter('modules',this)">Modules</button>
+        </div>
+      </div>
+      <div id="filesLoadingMsg" style="display:none;padding:1rem;text-align:center;color:var(--muted)">Loading…</div>
+      <div class="mat-split" style="flex:1;min-height:0">
+        <div id="filesGrid" class="mat-grid"></div>
+        <div id="modulesPanel" class="modules-panel"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MY LIBRARY -->
+<div class="page" id="libraryPage">
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="sidebar-section">Library</div>
+      <input type="search" id="libSearch" placeholder="Search saved…" oninput="refreshLibraryList()" style="margin:0 0.75rem 8px;width:calc(100% - 1.5rem);padding:6px 8px;border:0.5px solid var(--border);border-radius:6px;font-size:12px"/>
+      <select id="libCourseFilter" onchange="refreshLibraryList()" style="margin:0 0.75rem 8px;width:calc(100% - 1.5rem);padding:6px;font-size:12px;border-radius:6px;border:0.5px solid var(--border)">
+        <option value="">All courses</option>
+      </select>
+      <select id="libTypeFilter" onchange="refreshLibraryList()" style="margin:0 0.75rem 8px;width:calc(100% - 1.5rem);padding:6px;font-size:12px;border-radius:6px;border:0.5px solid var(--border)">
+        <option value="">All types</option>
+        <option value="assignment">Assignment</option>
+        <option value="quiz">Quiz</option>
+        <option value="page">Page</option>
+        <option value="file">File</option>
+        <option value="textbook">Textbook</option>
+        <option value="tutor_sources_bundle">Session bundle</option>
+        <option value="web_reference">Web</option>
+      </select>
+      <div class="sidebar-section" style="padding-top:8px">Actions</div>
+      <div style="padding:0 0.75rem;display:flex;flex-direction:column;gap:6px">
+        <button type="button" class="export-btn" onclick="exportLibraryJson()">Export JSON</button>
+        <label class="export-btn" style="cursor:pointer"><input type="file" accept="application/json" style="display:none" onchange="importLibraryJson(event)"/>Import JSON</label>
+        <button type="button" class="export-btn" onclick="showAddTextbookForm()">Add textbook / note</button>
+      </div>
+    </div>
+    <div class="content-area" style="min-height:0;display:flex;flex-direction:column">
+      <div class="library-toolbar">
+        <strong style="font-size:14px;color:var(--navy)">Saved materials</strong>
+        <span id="libStorageNote" style="font-size:11px;color:var(--muted);margin-left:auto"></span>
+      </div>
+      <div id="libraryGrid" class="mat-grid" style="flex:1"></div>
+      <div id="addTextbookBar" style="display:none;padding:1rem;border-top:0.5px solid var(--border);background:var(--surface)">
+        <div class="field"><label>Title</label><input type="text" id="tbTitle" placeholder="Chapter 3 — Organic chem"/></div>
+        <div class="field"><label>Course</label><select id="tbCourse"></select></div>
+        <div class="field"><label>URL (optional)</label><input type="text" id="tbUrl" placeholder="https://…"/></div>
+        <div class="field"><label>Notes</label><textarea id="tbNotes" rows="3" style="width:100%;padding:8px;border-radius:8px;border:0.5px solid var(--border);font-family:inherit"></textarea></div>
+        <button type="button" class="connect-btn" style="width:auto;padding:8px 16px" onclick="saveTextbookEntry()">Save to Library</button>
+        <button type="button" class="modal-btn" onclick="document.getElementById('addTextbookBar').style.display='none'">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDY TUTOR -->
+<div class="page" id="tutorPage">
+  <div class="main-layout">
+    <div class="sidebar" style="width:220px">
+      <div class="sidebar-section">Tutor scope</div>
+      <div style="padding:0 0.75rem 10px">
+        <label style="font-size:10px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px">Course focus</label>
+        <select id="tutorCourseFocus" style="width:100%;padding:6px;font-size:12px;border-radius:6px;border:0.5px solid var(--border)"></select>
+      </div>
+      <div style="padding:0 0.75rem;display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--muted)">
+        <label style="cursor:pointer;display:flex;align-items:center;gap:6px"><input type="checkbox" id="tutorPreferCourseOnly"/> Prefer course only (no web)</label>
+        <label style="cursor:pointer;display:flex;align-items:center;gap:6px"><input type="checkbox" id="tutorAutosaveSources"/> Auto-save tutor sources</label>
+        <label style="cursor:pointer;display:flex;align-items:center;gap:6px"><input type="checkbox" id="hideGodMode"/> Disable GOD mode prefix</label>
+      </div>
+      <div class="sidebar-section">Pin from Library</div>
+      <div id="tutorPinPicker" style="padding:0 0.75rem;font-size:11px;color:var(--muted);max-height:120px;overflow-y:auto"></div>
+      <div class="sidebar-section">Quick prompts</div>
+      <div style="padding:0 0.5rem;display:flex;flex-direction:column;gap:4px">
+        <button type="button" class="small-btn" onclick="tutorChip('Summarize key ideas from my pinned materials.')">Summarize pins</button>
+        <button type="button" class="small-btn" onclick="tutorChip('What does my syllabus say about grading and deadlines? Use course tools.')">Syllabus help</button>
+        <button type="button" class="small-btn" onclick="tutorChip('Walk me through the current assignment without giving me a final answer yet — then verify my understanding.')">Assignment walkthrough</button>
+      </div>
+    </div>
+    <div class="content-area">
+      <div class="chat-banner">
+        <div><div class="bname">Study Tutor</div><div class="bcode" id="tutorBannerSub">Canvas-first tutoring · Claude (Anthropic API)</div></div>
+        <div class="tool-badges"><div class="badge canvas">Course</div><div class="badge web">Web optional</div></div>
+      </div>
+      <div id="tutorGodBanner" class="god-banner" style="display:none;margin:0 1rem">GOD mode — tutoring safeguards skipped for this message.</div>
+      <div class="tutor-tools">
+        <span style="font-size:11px;color:var(--muted)">Pins:</span>
+        <div class="tutor-pins" id="tutorPinnedStrip"></div>
+        <button type="button" class="small-btn" style="margin-left:auto" onclick="clearTutorChat()">Clear chat</button>
+        <button type="button" class="small-btn" onclick="saveTutorSourcesBundle()" title="Save tool sources from last reply">Save sources</button>
+        <span id="tutorSourceLine" style="font-size:11px;color:var(--muted2);flex-basis:100%"></span>
+      </div>
+      <div class="messages" id="tutorMessages" style="flex:1"></div>
+      <div class="input-bar">
+        <textarea id="tutorInput" placeholder="Study question… Prefix GOD mode: to bypass safeguards if needed." onkeydown="handleTutorKey(event)"></textarea>
+        <button class="send-btn" id="tutorSendBtn" onclick="sendTutor()"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 8L14 2L8 14L7 9L2 8Z" fill="white"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="settingsPage">
+  <div class="settings-wrap">
+    <div class="settings-card">
+      <h3>Account</h3>
+      <p>Connected account and credential management.</p>
+      <div class="settings-row"><div><label id="settingsUser">Not connected</label><small>Student name</small></div></div>
+      <div class="settings-row"><div><label id="settingsDomain">—</label><small>Canvas domain</small></div></div>
+      <div class="settings-row">
+        <div><label>Saved credentials</label><small>Stored in browser localStorage on this device only</small></div>
+        <button class="danger-btn" onclick="clearSaved()">Clear &amp; log out</button>
+      </div>
+    </div>
+    <div class="settings-card">
+      <h3>Course Colors</h3>
+      <p>Click any color dot to customize — changes apply to the calendar immediately.</p>
+      <div id="colorSettings"><div style="font-size:13px;color:var(--muted)">Connect to Canvas to see courses.</div></div>
+    </div>
+    <div class="settings-card">
+      <h3>My Library storage</h3>
+      <p>Saved snapshots and textbooks live in <strong>IndexedDB</strong> in this browser — large assignments and PDF bookmarks can grow past localStorage limits. Use <strong>My Library → Export JSON</strong> for backups and to migrate to another device.</p>
+    </div>
+    <div class="settings-card">
+      <h3>About</h3>
+      <p>Canvas Study App — AI assistant with live Canvas data, web search, color-coded calendar, and calendar export (.ics works with Google Calendar, Apple Calendar, and Outlook).</p>
+      <div class="settings-row">
+        <div><label>Canvas API</label><small>Extension calls Canvas directly (no proxy)</small></div>
+        <div id="proxyStatus" style="font-size:12px;color:var(--muted2)">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- PLANNER -->
+<div class="page" id="plannerPage">
+  <div class="planner-wrap">
+    <div class="planner-toolbar">
+      <div class="planner-nav">
+        <button onclick="changeWeek(-1)">&#8592;</button>
+        <div class="planner-week-label" id="plannerWeekLabel"></div>
+        <button onclick="changeWeek(1)">&#8594;</button>
+      </div>
+      <button class="planner-this-week" onclick="goThisWeek()">This Week</button>
+      <div style="font-size:12px;color:var(--muted);margin-left:0.5rem" id="plannerAssignmentCount"></div>
+      <button id="aiPlanBtn" onclick="aiPlanWeek()" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:0.5px solid var(--gold);background:rgba(212,160,23,0.08);color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--gold)"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 4.5v3.25l2.5 1.5-.75 1.25-3-1.75V5.5h1.25z"/></svg>
+        AI Plan My Week
+      </button>
+      <div class="planner-view-toggle" style="margin-left:auto">
+        <button class="planner-view-btn active" id="pvGrid" onclick="setPlannerView('grid')">Grid</button>
+        <button class="planner-view-btn" id="pvTID" onclick="setPlannerView('tid')">TID Cards</button>
+      </div>
+    </div>
+
+    <!-- HOURS CALCULATOR -->
+    <div class="hours-calc" id="hoursCalc">
+      <div class="hours-calc-title">⏱ Weekly Hours Calculator (168 hrs/week)</div>
+      <div class="hours-row">
+        168 hrs &minus;
+        <input type="number" id="hrsSleep" value="56" min="0" max="100" oninput="calcHours()" title="Hours of sleep"/>
+        <span>sleep &minus;</span>
+        <input type="number" id="hrsClass" value="15" min="0" max="80" oninput="calcHours()" title="Hours in class"/>
+        <span>class &minus;</span>
+        <input type="number" id="hrsStudy" value="20" min="0" max="80" oninput="calcHours()" title="Hours studying"/>
+        <span>study &minus;</span>
+        <input type="number" id="hrsWork" value="0" min="0" max="80" oninput="calcHours()" title="Hours working"/>
+        <span>work &equals;</span>
+        <span class="hours-result" id="hrsResult">77 hrs free</span>
+      </div>
+    </div>
+
+    <div class="planner-body" id="plannerBody">
+
+      <!-- GRID VIEW -->
+      <div id="plannerGridView">
+        <div class="grid-section">
+          <div class="grid-outer">
+            <div class="planner-grid" id="plannerGrid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TID VIEW (hidden by default) -->
+      <div id="plannerTIDView" style="display:none;padding:0 1.25rem 1rem">
+        <div class="tid-title">TID — Today I'll Do It</div>
+        <div class="tid-outer">
+          <div class="tid-grid" id="tidGrid"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TID cards always shown below grid -->
+    <div class="tid-section" id="tidSection">
+      <div class="tid-title">TID — Today I'll Do It &nbsp;<span style="font-size:11px;color:var(--muted2);font-weight:400">A = Must Do &nbsp; B = Should Do &nbsp; C = Nice to Do</span></div>
+      <div class="tid-outer">
+        <div class="tid-grid" id="tidGridBottom"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOCK EDITOR MODAL -->
+<div class="modal-overlay" id="blockModalOverlay" onclick="maybeCloseBlockModal(event)">
+  <div class="block-modal">
+    <button class="modal-close" onclick="closeBlockModal()">×</button>
+    <h3 id="blockModalTitle">Add Block</h3>
+    <input type="hidden" id="bmDay"/>
+    <input type="hidden" id="bmSlot"/>
+    <input type="hidden" id="bmId"/>
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="bmText" placeholder="e.g. Study for exam, Review notes…" onkeydown="if(event.key==='Enter')saveBlock()"/>
+    </div>
+    <div class="field">
+      <label>Duration</label>
+      <select id="bmDuration">
+        <option value="1">30 min</option>
+        <option value="2" selected>1 hour</option>
+        <option value="3">1.5 hours</option>
+        <option value="4">2 hours</option>
+        <option value="6">3 hours</option>
+        <option value="8">4 hours</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Color</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="color" id="bmColor" value="#1a2744" style="width:36px;height:28px;padding:2px;border-radius:6px;border:0.5px solid var(--border);cursor:pointer"/>
+        <div style="display:flex;gap:5px;flex-wrap:wrap" id="bmColorPresets"></div>
+      </div>
+    </div>
+    <div class="field" id="bmCourseField">
+      <label>Course (optional)</label>
+      <select id="bmCourse">
+        <option value="">— None —</option>
+      </select>
+    </div>
+    <div class="block-modal-actions">
+      <button class="bm-btn danger" id="bmDeleteBtn" onclick="deleteBlock()" style="display:none">Delete</button>
+      <button class="bm-btn" onclick="closeBlockModal()">Cancel</button>
+      <button class="bm-btn primary" onclick="saveBlock()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="maybeCloseModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-course-line" id="modalCourse"></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<!-- Unified content viewer (assignments, quizzes, pages, files, library) -->
+<div class="content-viewer-overlay" id="fileViewerOverlay" onclick="if(event.target===this)closeFileViewer()">
+  <div class="content-viewer-panel" onclick="event.stopPropagation()">
+    <button class="modal-close" style="position:absolute;top:10px;right:10px;z-index:2" onclick="closeFileViewer()">×</button>
+    <div class="cv-head">
+      <div><span id="fvTitle"></span><span id="cvTypeBadge" class="cv-badge"></span></div>
+    </div>
+    <div id="cvMetaLine" class="cv-meta"></div>
+    <div id="cvQuizMeta" class="cv-meta" style="display:none;border-top:0"></div>
+    <div class="mat-split" style="flex:1;min-height:0;border-top:0.5px solid var(--border)">
+      <div id="cvSideMeta" style="display:none;flex:0 0 200px;border-right:0.5px solid var(--border);padding:10px;font-size:11px;color:var(--muted);overflow-y:auto;background:var(--soft)"></div>
+      <div id="fvBody" class="cv-body-scroll file-content-view"></div>
+    </div>
+    <div class="cv-actions">
+      <span id="cvLibHint" style="font-size:11px;color:var(--muted2);flex:1"></span>
+      <button type="button" id="fvEditBtn" class="modal-btn" style="display:none" onclick="toggleFileEdit()">Edit</button>
+      <button type="button" id="fvSaveBtn" class="modal-btn primary" style="display:none" onclick="saveFileEdit()">Save</button>
+      <button type="button" class="modal-btn primary" onclick="saveViewerToLibraryAction()">Save to Library</button>
+      <button type="button" class="modal-btn" onclick="refreshViewerFromCanvas()">Refresh from Canvas</button>
+      <button type="button" class="modal-btn" onclick="openCanvasViewerUrl()">Open in Canvas</button>
+      <button type="button" class="modal-btn" onclick="downloadCurrentViewerFile()">Download</button>
+      <button type="button" class="modal-btn" onclick="askAssistantAboutViewer()">Ask Assistant</button>
+      <button type="button" class="modal-btn" onclick="studyTutorAboutViewer()">Study with Tutor</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const PROXY='http://127.0.0.1:3001';
+const STORE_KEY='canvasStudyApp_v2';
+const COLORS=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899','#14b8a6','#6366f1','#a855f7','#e11d48','#0891b2','#65a30d'];
+
+let canvasDomain='',canvasToken='',anthropicKey='';
+let courses=[],allAssignments=[],courseData={};
+let activeCourse=null,chatHistory=[],isLoading=false;
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calView='month';
+let visibleCourseIds=new Set(),courseColors={},currentEvent=null;
+const ANTHROPIC_MODEL='claude-sonnet-4-20250514';
+const WEB_TOOL_DEF={type:'web_search_20250305',name:'web_search'};
+const LIB_DB_NAME='canvasLibrary_v1';
+const LIB_STORE='items';
+let matFilter='all',activeMatCourse=null,materialsList=[],materialsModules=[];
+let viewerCtx=null,viewerLoad=null;
+let tutorChatHistory=[],lastReplySources=[],isTutorLoading=false;
+let libDbPromise=null;
+
+// ── STORAGE ────────────────────────────────────────────────────────────────
+async function saveCredentials(){
+  if(!document.getElementById('rememberMe')?.checked)return;
+  const payload={domain:canvasDomain,token:canvasToken,anthropicKey,courseColors,rememberMe:true};
+  if(window.__CS_EXT__&&chrome.storage?.sync){
+    await chrome.storage.sync.set(payload);
+    return;
+  }
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(payload));}catch(e){}
+}
+async function loadCredentials(){
+  if(window.__CS_EXT__&&chrome.storage?.sync){
+    const r=await chrome.storage.sync.get(['canvasDomain','canvasToken','anthropicKey','courseColors','rememberMe']);
+    if(r.canvasDomain||r.canvasToken)return r;
+    return null;
+  }
+  try{const r=localStorage.getItem(STORE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}
+}
+async function clearSaved(){
+  if(window.__CS_EXT__&&chrome.storage?.sync)await chrome.storage.sync.remove(['canvasDomain','canvasToken','anthropicKey','courseColors','rememberMe']);
+  else localStorage.removeItem(STORE_KEY);
+  location.reload();
+}
+function getUrlDomainParam(){
+  try{return new URLSearchParams(location.search).get('domain')||'';}catch(e){return '';}
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+window.addEventListener('load',async()=>{
+  if(window.__CS_EXT__)document.documentElement.classList.add('cs-ext-panel');
+  const urlDomain=getUrlDomainParam();
+  if(urlDomain){
+    const domEl=document.getElementById('domain');
+    domEl.value=urlDomain.replace(/^https?:\/\//,'');
+    domEl.readOnly=true;
+    domEl.title='Detected from this Canvas site';
+  }
+  const saved=await loadCredentials();
+  if(saved?.domain&&saved?.token&&saved?.anthropicKey){
+    document.getElementById('savedBadge').style.display='flex';
+    if(!urlDomain)document.getElementById('domain').value=saved.domain;
+    document.getElementById('token').value=saved.token;
+    document.getElementById('anthropicKey').value=saved.anthropicKey;
+    if(saved.courseColors)courseColors=saved.courseColors;
+    setTimeout(()=>connect(true),600);
+  }
+  checkProxy();
+  attachCanvasSmartLinks('messages');
+  attachCanvasSmartLinks('tutorMessages');
+});
+
+async function checkProxy(){
+  const el=document.getElementById('proxyStatus');if(!el)return;
+  if(window.__CS_EXT__){
+    try{
+      const r=await chrome.runtime.sendMessage({type:'PING'});
+      if(r?.ok){el.textContent='Extension API';el.style.color='var(--green)';}
+      else throw new Error('no');
+    }catch(e){
+      el.textContent='Extension error';
+      el.style.color='var(--rust)';
+    }
+    return;
+  }
+  try{
+    const r=await fetch(PROXY+'/proxy-health',{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    await r.json().catch(()=>({}));
+    el.textContent='✓ Running';
+    el.style.color='var(--green)';
+  }catch(e){
+    el.textContent='Not running';
+    el.style.color='var(--rust)';
+  }
+}
+
+// ── NAV ────────────────────────────────────────────────────────────────────
+function showPage(pageId,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  if(btn)btn.classList.add('active');
+}
+
+// ── CANVAS API ─────────────────────────────────────────────────────────────
+async function proxyGet(path){
+  if(window.__CS_EXT__){
+    const r=await chrome.runtime.sendMessage({type:'CANVAS_FETCH',path,domain:canvasDomain,token:canvasToken});
+    if(!r?.ok)throw new Error(r?.error||`Canvas ${r?.status||''}`);
+    return r.json;
+  }
+  const r=await fetch(PROXY+path,{headers:{'Authorization':`Bearer ${canvasToken}`,'X-Canvas-Domain':canvasDomain}});
+  if(!r.ok)throw new Error(`Canvas ${r.status}`);
+  return r.json();
+}
+function parseLinkNext(linkHeader){
+  if(!linkHeader)return null;
+  const parts=linkHeader.split(',');
+  for(const raw of parts){
+    const m=raw.trim().match(/<([^>]+)>;\s*rel="next"/i);
+    if(m){
+      try{const u=new URL(m[1]);return u.pathname+u.search;}catch(e){return null;}
+    }
+  }
+  return null;
+}
+async function proxyGetAll(path,maxPages=25){
+  let next=path;
+  const out=[];
+  let guard=0;
+  while(next&&guard++<maxPages){
+    let chunk,link;
+    if(window.__CS_EXT__){
+      const r=await chrome.runtime.sendMessage({type:'CANVAS_FETCH',path:next,domain:canvasDomain,token:canvasToken});
+      if(!r?.ok)throw new Error(r?.error||`Canvas ${r?.status||''}`);
+      chunk=r.json;
+      link=r.link||'';
+    }else{
+      const r=await fetch(PROXY+next,{headers:{'Authorization':`Bearer ${canvasToken}`,'X-Canvas-Domain':canvasDomain}});
+      if(!r.ok)throw new Error(`Canvas ${r.status}`);
+      chunk=await r.json();
+      link=r.headers.get('Link')||'';
+    }
+    next=parseLinkNext(link);
+    if(Array.isArray(chunk))out.push(...chunk);
+    else return chunk;
+  }
+  return out;
+}
+
+async function connect(silent=false){
+  const domain=document.getElementById('domain').value.trim().replace(/^https?:\/\//,'');
+  const token=document.getElementById('token').value.trim();
+  const aKey=document.getElementById('anthropicKey').value.trim();
+  document.getElementById('errMsg').style.display='none';
+  if(!domain||!token||!aKey){if(!silent)showErr('Please fill in all three fields.');return;}
+  canvasDomain=domain;canvasToken=token;anthropicKey=aKey;
+  const btn=document.getElementById('connectBtn');
+  btn.disabled=true;btn.textContent='Connecting…';
+  document.getElementById('dot').className='status-dot loading';
+  try{
+    const[fetchedCourses,self]=await Promise.all([
+      proxyGet('/api/v1/courses?enrollment_state=active&per_page=30&include[]=total_scores'),
+      proxyGet('/api/v1/users/self')
+    ]);
+    courses=fetchedCourses.filter(c=>c.name&&!c.access_restricted_by_date);
+    courses.forEach((c,i)=>{if(!courseColors[c.id])courseColors[c.id]=COLORS[i%COLORS.length];});
+    visibleCourseIds=new Set(courses.map(c=>c.id));
+    await loadAllAssignments();
+    saveCredentials();
+    buildUI(self);
+    buildCalendar();
+    buildSettings(self);
+  }catch(e){
+    let msg=e.message;
+    if(msg.includes('fetch')||msg.includes('Failed'))msg=window.__CS_EXT__?'Could not reach Canvas. Check your domain, token, and that this extension has permission for your school site.':('Cannot reach proxy at '+PROXY+'. Run: python canvas-proxy.py');
+    showErr(msg);
+    btn.disabled=false;btn.textContent='Connect to Canvas';
+    document.getElementById('dot').className='status-dot off';
+    document.getElementById('savedBadge').style.display='none';
+  }
+}
+
+async function loadAllAssignments(){
+  allAssignments=[];
+  await Promise.all(courses.slice(0,20).map(async c=>{
+    try{
+      const data=await proxyGetAll(`/api/v1/courses/${c.id}/assignments?per_page=100&order_by=due_at&include[]=submission`,20);
+      const arr=Array.isArray(data)?data:[];
+      arr.forEach(a=>{
+        allAssignments.push({
+          ...a,course_name:c.name,course_code:c.course_code||'',course_id:c.id,
+          color:courseColors[c.id]||'#3b82f6',
+          quiz_id:a.quiz_id,submission_types:a.submission_types,
+          html_url:a.html_url||`https://${canvasDomain}/courses/${c.id}/assignments/${a.id}`
+        });
+      });
+      courseData[c.id]={assignments:arr};
+    }catch(e){courseData[c.id]={assignments:[]};}
+  }));
+}
+
+function buildUI(self){
+  document.getElementById('setupPage').classList.remove('active');
+  document.getElementById('chatPage').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab')[0].classList.add('active');
+  document.getElementById('dot').className='status-dot';
+  const chip=document.getElementById('userChip');
+  chip.style.display='block';chip.textContent=self.name.split(' ')[0];
+  document.getElementById('infoBar').style.display='block';
+  document.getElementById('infoBar').innerHTML=`Connected as <span>${self.name}</span> · <span>${courses.length}</span> courses · <span>${allAssignments.filter(a=>a.due_at).length}</span> assignments with due dates`;
+  buildCourseSidebar();
+  populateTutorAndLibraryUI();
+  openLibraryDb().then(()=>refreshLibraryList()).catch(()=>{});
+}
+
+function buildCourseSidebar(){
+  const list=document.getElementById('courseList');
+  list.innerHTML='';
+  const allEl=document.createElement('div');
+  allEl.className='course-item active';
+  allEl.innerHTML=`<div class="course-dot" style="background:var(--navy)"></div><div><div class="cname">All Courses</div></div>`;
+  allEl.onclick=()=>selectCourse(null,allEl);
+  list.appendChild(allEl);
+  courses.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='course-item';
+    el.setAttribute('data-course-id',c.id);
+    el.innerHTML=`<div class="course-dot" style="background:${courseColors[c.id]}"></div><div><div class="cname">${c.name}</div><div class="ccode">${c.course_code||''}</div></div>`;
+    el.onclick=()=>selectCourse(c,el);
+    list.appendChild(el);
+  });
+}
+
+function fillCourseDropdown(selectEl,withAllOption){
+  if(!selectEl)return;
+  const cur=selectEl.value;
+  selectEl.innerHTML='';
+  if(withAllOption){
+    const o=document.createElement('option');o.value='';o.textContent='All my courses';selectEl.appendChild(o);
+  }
+  courses.forEach(c=>{
+    const o=document.createElement('option');
+    o.value=String(c.id);
+    o.textContent=c.course_code?`${c.course_code} — ${c.name}`:c.name;
+    selectEl.appendChild(o);
+  });
+  if(cur&&[...selectEl.options].some(x=>x.value===cur))selectEl.value=cur;
+}
+
+function populateTutorAndLibraryUI(){
+  fillCourseDropdown(document.getElementById('tutorCourseFocus'),true);
+  fillCourseDropdown(document.getElementById('libCourseFilter'),true);
+  fillCourseDropdown(document.getElementById('tbCourse'),false);
+  restoreTutorPrefs();
+}
+
+function selectCourse(course,el){
+  activeCourse=course;
+  document.querySelectorAll('#courseList .course-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('bannerName').textContent=course?course.name:'All Courses';
+  document.getElementById('bannerCode').textContent=course?(course.course_code||''):'Ask anything about your enrolled courses';
+}
+
+// ── CALENDAR ───────────────────────────────────────────────────────────────
+function buildCalendar(){buildCalFilters();renderCal();}
+
+function buildCalFilters(){
+  const el=document.getElementById('calCourseFilters');
+  el.innerHTML='';
+  courses.forEach(c=>{
+    const row=document.createElement('div');
+    row.className='cal-course-row';
+    row.innerHTML=`
+      <input type="checkbox" id="cf-${c.id}" checked onchange="toggleCourse(${c.id},this.checked)"/>
+      <div class="color-swatch" style="background:${courseColors[c.id]}" title="Click to change color">
+        <input type="color" value="${courseColors[c.id]}" onchange="changeCourseColor(${c.id},this.value)"/>
+      </div>
+      <label class="cal-course-label" for="cf-${c.id}" title="${c.name}">${c.course_code||c.name}</label>`;
+    el.appendChild(row);
+  });
+}
+
+function toggleCourse(id,checked){
+  if(checked)visibleCourseIds.add(id);else visibleCourseIds.delete(id);
+  renderCal();
+}
+
+function changeCourseColor(id,color){
+  courseColors[id]=color;
+  // Update all assignment colors
+  allAssignments.forEach(a=>{if(a.course_id===id)a.color=color;});
+  saveCredentials();
+  buildCalFilters();
+  buildSettings();
+  renderCal();
+  // Update sidebar dots
+  document.querySelectorAll(`#courseList .course-item[data-course-id="${id}"] .course-dot`).forEach(d=>d.style.background=color);
+  document.querySelectorAll(`#colorSettings .color-swatch-inline[data-id="${id}"]`).forEach(d=>d.style.background=color);
+}
+
+function changeMonth(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();}
+function goToday(){calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCal();}
+function setView(v){calView=v;document.getElementById('viewMonth').classList.toggle('active',v==='month');document.getElementById('viewList').classList.toggle('active',v==='list');renderCal();}
+function getVisibleEvents(){return allAssignments.filter(a=>a.due_at&&visibleCourseIds.has(a.course_id));}
+
+function renderCal(){
+  document.getElementById('calMonthLabel').textContent=new Date(calYear,calMonth,1).toLocaleString('default',{month:'long',year:'numeric'});
+  calView==='month'?renderMonthGrid():renderListView();
+}
+
+function renderMonthGrid(){
+  const wrap=document.getElementById('calGridWrap');
+  const today=new Date();today.setHours(0,0,0,0);
+  const firstDay=new Date(calYear,calMonth,1);
+  const lastDay=new Date(calYear,calMonth+1,0);
+  const startOffset=firstDay.getDay();
+  const events=getVisibleEvents();
+  const byDate={};
+  events.forEach(a=>{
+    const d=new Date(a.due_at);
+    const key=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if(!byDate[key])byDate[key]=[];
+    byDate[key].push(a);
+  });
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html=`<div class="cal-grid">`;
+  days.forEach(d=>{html+=`<div class="cal-day-hdr">${d}</div>`;});
+  for(let i=0;i<startOffset;i++){
+    const d=new Date(calYear,calMonth,-(startOffset-i-1));
+    html+=`<div class="cal-day other-month"><div class="day-num">${d.getDate()}</div></div>`;
+  }
+  for(let d=1;d<=lastDay.getDate();d++){
+    const date=new Date(calYear,calMonth,d);
+    const key=`${calYear}-${calMonth}-${d}`;
+    const dayEvts=byDate[key]||[];
+    const isToday=date.getTime()===today.getTime();
+    const maxShow=3;
+    html+=`<div class="cal-day${isToday?' today':''}">`;
+    html+=`<div class="day-num">${d}</div>`;
+    dayEvts.slice(0,maxShow).forEach(a=>{
+      html+=`<div class="day-event" style="background:${a.color}" onclick="openEventModal(${a.id})" title="${a.name}">${a.name}</div>`;
+    });
+    if(dayEvts.length>maxShow)html+=`<div class="day-more">+${dayEvts.length-maxShow} more</div>`;
+    html+=`</div>`;
+  }
+  const totalCells=Math.ceil((startOffset+lastDay.getDate())/7)*7;
+  const remaining=totalCells-(startOffset+lastDay.getDate());
+  for(let i=1;i<=remaining;i++)html+=`<div class="cal-day other-month"><div class="day-num">${i}</div></div>`;
+  html+=`</div>`;
+  wrap.innerHTML=html;
+}
+
+function renderListView(){
+  const wrap=document.getElementById('calGridWrap');
+  const events=getVisibleEvents().sort((a,b)=>new Date(a.due_at)-new Date(b.due_at));
+  if(!events.length){wrap.innerHTML='<div style="padding:2rem;text-align:center;color:var(--muted);font-size:13px">No assignments to show for selected courses.</div>';return;}
+  const groups={};
+  events.forEach(a=>{
+    const key=new Date(a.due_at).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    if(!groups[key])groups[key]=[];
+    groups[key].push(a);
+  });
+  let html='<div class="cal-list">';
+  Object.entries(groups).forEach(([date,evts])=>{
+    html+=`<div class="list-date-hdr">${date}</div>`;
+    evts.forEach(a=>{
+      const time=new Date(a.due_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      const pts=a.points_possible?`${a.points_possible} pts`:'';
+      html+=`<div class="list-event-row" onclick="openEventModal(${a.id})">
+        <div class="list-dot" style="background:${a.color}"></div>
+        <div class="list-info"><div class="list-name">${a.name}</div><div class="list-course">${a.course_name}</div></div>
+        <div class="list-time">${time}</div>
+        ${pts?`<div class="list-pts">${pts}</div>`:''}
+      </div>`;
+    });
+  });
+  html+='</div>';
+  wrap.innerHTML=html;
+}
+
+function openEventModal(id){
+  const a=allAssignments.find(x=>x.id===id);
+  if(!a)return;
+  currentEvent=a;
+  const due=new Date(a.due_at);
+  const dueFmt=due.toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  document.getElementById('modalTitle').textContent=a.name;
+  document.getElementById('modalCourse').innerHTML=`<div class="course-dot" style="background:${a.color};width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px"></div>${a.course_name}`;
+  let bodyHTML=`<div class="row"><strong>Due:</strong> ${dueFmt}</div>`;
+  bodyHTML+=`<div class="row"><strong>Points:</strong> ${a.points_possible||'N/A'}</div>`;
+  if(a.submission?.submitted_at)bodyHTML+=`<div class="row"><strong>Submitted:</strong> ${new Date(a.submission.submitted_at).toLocaleString()}</div>`;
+  if(a.submission?.score!=null)bodyHTML+=`<div class="row"><strong>Score:</strong> ${a.submission.score} / ${a.points_possible}</div>`;
+  if(a.submission?.missing)bodyHTML+=`<div class="row" style="color:var(--rust)">⚠ Missing</div>`;
+  if(a.submission?.late)bodyHTML+=`<div class="row" style="color:#f59e0b">⏰ Submitted late</div>`;
+  if(a.description){const desc=a.description.replace(/<[^>]*>/g,'').trim().slice(0,200);if(desc)bodyHTML+=`<div class="row" style="margin-top:8px;font-size:12px;color:var(--muted)">${desc}…</div>`;}
+  document.getElementById('modalBody').innerHTML=bodyHTML;
+  const gcalUrl=buildGCalURL(a);
+  const submitUrl=`https://${canvasDomain}/courses/${a.course_id}/assignments/${a.id}`;
+  const alreadySubmitted=!!a.submission?.submitted_at;
+  document.getElementById('modalActions').innerHTML=`
+    ${alreadySubmitted
+      ? '<span style="font-size:12px;color:var(--green);padding:6px 0;display:flex;align-items:center;gap:4px">✓ Already Submitted</span>'
+      : `<a class="submit-link" href="${submitUrl}" target="_blank">📤 Submit Assignment</a>`}
+    <button type="button" class="modal-btn primary" onclick="viewCurrentEventCanvasContent()">View content</button>
+    <a class="modal-btn" href="${submitUrl}" target="_blank">🔗 Open in Canvas</a>
+    <a class="modal-btn" href="${gcalUrl}" target="_blank">📅 Add to Calendar</a>
+    <button class="modal-btn" onclick="downloadSingleICS()">Download .ics</button>
+    <button class="modal-btn" onclick="closeModal()">Close</button>`;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function viewCurrentEventCanvasContent(){
+  if(!currentEvent)return;
+  const c=courses.find(x=>x.id===currentEvent.course_id);
+  if(!c)return;
+  closeModal();
+  openContentViewer({type:'assignment',courseId:currentEvent.course_id,course:c,assignmentId:currentEvent.id});
+}
+
+function maybeCloseModal(e){if(e.target===document.getElementById('modalOverlay'))closeModal();}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+function downloadSingleICS(){if(currentEvent)downloadBlob(buildSingleICS(currentEvent),'text/calendar',`${currentEvent.name.replace(/[^a-z0-9]/gi,'_')}.ics`);}
+
+// ── ICS GENERATION ─────────────────────────────────────────────────────────
+function fmtICS(dateStr){return new Date(dateStr).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');}
+function escICS(s){return(s||'').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');}
+
+function buildSingleICS(a){
+  const start=fmtICS(a.due_at);
+  const end=fmtICS(new Date(new Date(a.due_at).getTime()+3600000).toISOString());
+  return['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Canvas Study App//EN','CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',`DTSTART:${start}`,`DTEND:${end}`,
+    `SUMMARY:${escICS(a.name)}`,
+    `DESCRIPTION:Course: ${escICS(a.course_name)}\\nPoints: ${a.points_possible||'N/A'}`,
+    `CATEGORIES:${escICS(a.course_name)}`,`UID:canvas-${a.id}@canvasstudy`,
+    'END:VEVENT','END:VCALENDAR'].join('\r\n');
+}
+
+function exportICS(mode){
+  const evts=mode==='visible'
+    ?allAssignments.filter(a=>a.due_at&&visibleCourseIds.has(a.course_id))
+    :allAssignments.filter(a=>a.due_at);
+  if(!evts.length){alert('No assignments with due dates found.');return;}
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Canvas Study App//EN','CALSCALE:GREGORIAN','X-WR-CALNAME:Canvas Assignments'];
+  evts.forEach(a=>{
+    const start=fmtICS(a.due_at);
+    const end=fmtICS(new Date(new Date(a.due_at).getTime()+3600000).toISOString());
+    lines.push('BEGIN:VEVENT',`DTSTART:${start}`,`DTEND:${end}`,
+      `SUMMARY:${escICS(a.name)} [${escICS(a.course_code||a.course_name)}]`,
+      `DESCRIPTION:Course: ${escICS(a.course_name)}\\nPoints: ${a.points_possible||'N/A'}`,
+      `CATEGORIES:${escICS(a.course_name)}`,`UID:canvas-${a.id}@canvasstudy`,'END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  downloadBlob(lines.join('\r\n'),'text/calendar','canvas-assignments.ics');
+}
+
+function buildGCalURL(a){
+  const start=fmtICS(a.due_at);
+  const end=fmtICS(new Date(new Date(a.due_at).getTime()+3600000).toISOString());
+  const p=new URLSearchParams({action:'TEMPLATE',text:`${a.name} [${a.course_code||a.course_name}]`,dates:`${start}/${end}`,details:`Course: ${a.course_name}\nPoints: ${a.points_possible||'N/A'}`});
+  return`https://calendar.google.com/calendar/render?${p}`;
+}
+
+function openGCalBulk(){
+  const evts=getVisibleEvents().filter(a=>a.due_at).slice(0,3);
+  if(!evts.length){alert('No assignments with due dates visible.');return;}
+  alert(`Opening first ${evts.length} assignments in Google Calendar. Allow popups if prompted.`);
+  evts.forEach((a,i)=>setTimeout(()=>window.open(buildGCalURL(a),'_blank'),i*600));
+}
+
+function downloadBlob(content,type,filename){
+  const blob=new Blob([content],{type});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+// ── SETTINGS ───────────────────────────────────────────────────────────────
+function buildSettings(self){
+  if(self){document.getElementById('settingsUser').textContent=self.name;document.getElementById('settingsDomain').textContent=canvasDomain;}
+  const el=document.getElementById('colorSettings');
+  el.innerHTML='';
+  courses.forEach(c=>{
+    const row=document.createElement('div');
+    row.className='color-settings-row';
+    row.innerHTML=`<label><div class="color-swatch color-swatch-inline" data-id="${c.id}" style="background:${courseColors[c.id]};width:18px;height:18px;display:inline-block;border-radius:50%;border:2px solid rgba(0,0,0,0.1);position:relative;cursor:pointer">
+      <input type="color" value="${courseColors[c.id]}" onchange="changeCourseColor(${c.id},this.value)" style="position:absolute;opacity:0;inset:0;cursor:pointer;width:100%;height:100%;border:none;padding:0"/></div>
+      ${c.name}</label><small style="font-size:11px;color:var(--muted)">${c.course_code||''}</small>`;
+    el.appendChild(row);
+  });
+}
+
+// ── CANVAS TOOLS ───────────────────────────────────────────────────────────
+async function tool_getCourses(){const d=await proxyGet('/api/v1/courses?enrollment_state=active&per_page=30&include[]=total_scores');return d.filter(c=>c.name).map(c=>({id:c.id,name:c.name,code:c.course_code,grade:c.enrollments?.[0]?.computed_current_score??null,letter:c.enrollments?.[0]?.computed_current_grade??null}));}
+async function tool_getAssignments({course_id,include_past,include_upcoming}){const rel=course_id?courses.filter(c=>String(c.id)===String(course_id)):courses.slice(0,15);const results=[];await Promise.all(rel.map(async c=>{let url=`/api/v1/courses/${c.id}/assignments?per_page=50&order_by=due_at`;if(include_upcoming===false)url+='&bucket=past';else if(include_past===false)url+='&bucket=upcoming';const data=await proxyGet(url).catch(()=>[]);data.forEach(a=>results.push({course:c.name,course_id:c.id,id:a.id,name:a.name,due_at:a.due_at,points:a.points_possible,submitted:a.has_submitted_submissions}));}));return results;}
+async function tool_getGrades({course_id}){const rel=course_id?courses.filter(c=>String(c.id)===String(course_id)):courses.slice(0,15);const results=[];await Promise.all(rel.map(async c=>{const data=await proxyGet(`/api/v1/courses/${c.id}/assignments?per_page=50&include[]=submission`).catch(()=>[]);data.forEach(a=>{if(a.submission)results.push({course:c.name,assignment:a.name,score:a.submission.score,possible:a.points_possible,grade:a.submission.grade,submitted_at:a.submission.submitted_at,late:a.submission.late,missing:a.submission.missing});});}));return results;}
+async function tool_getSubmissions({course_id}){const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);return proxyGet(`/api/v1/courses/${cid}/students/submissions?student_ids[]=self&per_page=50&include[]=assignment`).catch(()=>[]);}
+async function tool_getAnnouncements({course_id}){const codes=course_id?[`course_${course_id}`]:courses.slice(0,15).map(c=>`course_${c.id}`);return proxyGet(`/api/v1/announcements?${codes.map(c=>`context_codes[]=${c}`).join('&')}&per_page=20&active_only=true`).catch(()=>[]);}
+async function tool_getModules({course_id}){const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);return proxyGet(`/api/v1/courses/${cid}/modules?per_page=20&include[]=items`).catch(()=>[]);}
+async function tool_getSyllabus({course_id}){const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);const data=await proxyGet(`/api/v1/courses/${cid}?include[]=syllabus_body`).catch(()=>null);if(!data?.syllabus_body)return'No syllabus found.';return data.syllabus_body.replace(/<[^>]*>/g,'').slice(0,3000);}
+
+
+async function tool_getMaterials({course_id}){
+  const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);
+  const c=courses.find(x=>x.id===cid)||courses[0];
+  const baseUrl=`https://${canvasDomain}`;
+  const [modules,files]=await Promise.all([
+    proxyGet(`/api/v1/courses/${cid}/modules?per_page=20&include[]=items`).catch(()=>[]),
+    proxyGet(`/api/v1/courses/${cid}/files?per_page=30&sort=updated_at&order=desc`).catch(()=>[])
+  ]);
+  const items=[];
+  (Array.isArray(modules)?modules:[]).forEach(m=>{
+    (m.items||[]).forEach(i=>{
+      items.push({
+        module:m.name,type:i.type,title:i.title,
+        url:i.html_url||`${baseUrl}/courses/${cid}`,
+        external_url:i.external_url||null,
+        page_url:i.page_url||null
+      });
+    });
+  });
+  const fileList=(Array.isArray(files)?files:[]).map(f=>({
+    name:f.display_name,size:f.size,url:f.url,
+    type:f.content_type,updated:f.updated_at,
+    view_url:`${baseUrl}/courses/${cid}/files/${f.id}`
+  }));
+  return {course:c?.name,modules:items,files:fileList,course_url:`${baseUrl}/courses/${cid}`};
+}
+
+async function tool_getPages({course_id}){
+  const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);
+  const data=await proxyGet(`/api/v1/courses/${cid}/pages?per_page=30&sort=updated_at`).catch(()=>[]);
+  const baseUrl=`https://${canvasDomain}`;
+  return (Array.isArray(data)?data:[]).map(p=>({
+    title:p.title,url:`${baseUrl}/courses/${cid}/pages/${p.url}`,
+    updated:p.updated_at,published:p.published
+  }));
+}
+
+async function tool_getPageContent({course_id,page_url,full_excerpt}){
+  const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);
+  const data=await proxyGet(`/api/v1/courses/${cid}/pages/${page_url}`).catch(()=>null);
+  if(!data)return'Page not found.';
+  const plain=(data.body||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+  const cap=full_excerpt?12000:4500;
+  return{title:data.title,body:plain.slice(0,cap),truncated:(plain.length>cap)};
+}
+
+async function tool_getAssignmentDetails({course_id,assignment_id}){
+  const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);
+  const baseUrl=`https://${canvasDomain}`;
+  let assignments;
+  if(assignment_id){
+    const a=await proxyGet(`/api/v1/courses/${cid}/assignments/${assignment_id}?include[]=submission&include[]=rubric`).catch(()=>null);
+    assignments=a?[a]:[];
+  }else{
+    assignments=await proxyGet(`/api/v1/courses/${cid}/assignments?per_page=30&order_by=due_at&include[]=submission`).catch(()=>[]);
+  }
+  return (Array.isArray(assignments)?assignments:[]).map(a=>{
+    const descPlain=(a.description||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,12000);
+    return{
+      id:a.id,name:a.name,due_at:a.due_at,points:a.points_possible,graded_type:a.graded_type||null,
+      quiz_id:a.quiz_id||null,classify:classifyAssessment(a),
+      description_plain:descPlain,
+      submission_types:a.submission_types,
+      view_url:`${baseUrl}/courses/${cid}/assignments/${a.id}`,
+      submit_url:`${baseUrl}/courses/${cid}/assignments/${a.id}`,
+      submitted:!!a.submission?.submitted_at,score:a.submission?.score,grade:a.submission?.grade,
+      missing:a.submission?.missing,late:a.submission?.late
+    };
+  });
+}
+
+async function tool_getQuiz({course_id,quiz_id}){
+  if(!quiz_id)return{error:'quiz_id required'};
+  const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);
+  const quiz=await fetchQuizFull(cid,quiz_id).catch(()=>null);
+  if(!quiz)return{error:'Quiz not found'};
+  const baseUrl=`https://${canvasDomain}`;
+  const descPlain=(quiz.description||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,12000);
+  return{
+    id:quiz.id,title:quiz.title,question_count:quiz.question_count,
+    time_limit:quiz.time_limit,allowed_attempts:quiz.allowed_attempts,
+    lock_at:quiz.lock_at,unlock_at:quiz.unlock_at,due_at:quiz.due_at,quiz_type:quiz.quiz_type||null,
+    description_plain:descPlain,
+    canvas_url:`${baseUrl}/courses/${cid}/quizzes/${quiz.id}`
+  };
+}
+
+async function tool_getSavedLibrary({query,course_id,type,max_items}){
+  let items=[];
+  try{items=await libGetAll();}catch(e){return{items:[],hint:'IndexedDB unavailable'};}
+  const q=(query||'').toLowerCase();
+  let filtered=items;
+  if(course_id)filtered=filtered.filter(r=>String(r.courseId)===String(course_id));
+  if(type)filtered=filtered.filter(r=>r.type===type);
+  if(q)filtered=filtered.filter(r=>(r.title+' '+(r.contentText||'')+' '+(r.notes||'')).toLowerCase().includes(q));
+  filtered.sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+  const cap=Math.min(Math.max(1,+max_items||12),35);
+  return filtered.slice(0,cap).map(r=>({id:r.id,title:r.title,type:r.type,course:r.courseName,excerpt:(r.contentText||'').slice(0,2400)}));
+}
+
+async function tool_getCourseFiles({course_id}){
+  const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);
+  const baseUrl=`https://${canvasDomain}`;
+  const files=await proxyGet(`/api/v1/courses/${cid}/files?per_page=50&sort=updated_at&order=desc`).catch(()=>[]);
+  return (Array.isArray(files)?files:[]).map(f=>({
+    id:f.id,name:f.display_name,
+    size:f.size,type:f.content_type,
+    updated:f.updated_at,
+    download_url:f.url,
+    view_url:`${baseUrl}/courses/${cid}/files/${f.id}`
+  }));
+}
+
+const TOOL_MAP={get_courses:tool_getCourses,get_assignments:tool_getAssignments,get_grades:tool_getGrades,get_submissions:tool_getSubmissions,get_announcements:tool_getAnnouncements,get_modules:tool_getModules,get_syllabus:tool_getSyllabus,get_materials:tool_getMaterials,get_pages:tool_getPages,get_page_content:tool_getPageContent,get_assignment_details:tool_getAssignmentDetails,get_course_files:tool_getCourseFiles,get_quiz:tool_getQuiz,get_saved_library:tool_getSavedLibrary};
+const TOOLS=[
+  WEB_TOOL_DEF,
+  {name:'get_courses',description:'List active courses with grades.',input_schema:{type:'object',properties:{},required:[]}},
+  {name:'get_assignments',description:'Get assignments. include_past/include_upcoming booleans to filter.',input_schema:{type:'object',properties:{course_id:{type:'number'},include_past:{type:'boolean'},include_upcoming:{type:'boolean'}},required:[]}},
+  {name:'get_grades',description:'Get grades and submission status.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_submissions',description:'Get submission data for a course.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_announcements',description:'Get recent announcements.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_modules',description:'Get course modules and items.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_syllabus',description:'Get course syllabus.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_materials',description:'Get all course materials: module items, files, pages, and links. Use this when asked about course content, readings, or resources.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_pages',description:'List all Canvas pages/wiki pages for a course.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_page_content',description:'Get Canvas page plain text by page_url slug. Use full_excerpt=true for longer reads.',input_schema:{type:'object',properties:{course_id:{type:'number'},page_url:{type:'string',description:'Slug from get_pages'},full_excerpt:{type:'boolean'}},required:['page_url']}},
+  {name:'get_assignment_details',description:'Get assignment instructions (long plain text), submission info, quiz_id when linked, graded type.',input_schema:{type:'object',properties:{course_id:{type:'number'},assignment_id:{type:'number'}},required:[]}},
+  {name:'get_quiz',description:'Get quiz/exam metadata and instructions by quiz ID (often from quiz_id on assignments). Questions may still be inaccessible via API.',input_schema:{type:'object',properties:{course_id:{type:'number'},quiz_id:{type:'number'}},required:['quiz_id']}},
+  {name:'get_course_files',description:'List all files uploaded to a course with download links.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_saved_library',description:'Search the student-owned saved Library snapshots (offline).',input_schema:{type:'object',properties:{query:{type:'string'},course_id:{type:'number'},type:{type:'string'},max_items:{type:'number'}},required:[]}}
+];
+const TUTOR_CANVAS_TOOLS_WITHOUT_WEB=TOOLS.slice(1);
+
+async function runAgent(userMessage){
+  const courseList=courses.map(c=>`- ${c.name} (ID:${c.id}, code:${c.course_code||'N/A'})`).join('\n');
+  const focus=activeCourse?`Focused on: ${activeCourse.name} (ID:${activeCourse.id})`:'All courses.';
+  const system=`You are a Canvas LMS academic assistant with live access to the student's Canvas account, course materials, files, pages, and the web.
+
+Courses:
+${courseList}
+${focus}
+Canvas base URL: https://${canvasDomain}
+
+TOOLS AVAILABLE:
+- get_assignments / get_assignment_details / get_quiz: assignments, quizzes, due dates, grades, long instructions
+- get_saved_library: student-owned saved Library snapshots (textbooks, snapshots)
+- get_materials: course modules, files, pages, external resources
+- get_pages / get_page_content: Canvas wiki/content pages with full text
+- get_course_files: uploaded files with download links
+- get_grades / get_submissions: grade details
+- get_announcements / get_syllabus: course info
+- web_search: external research, concepts, tutorials
+
+RESPONSE RULES:
+1. Always use tools to fetch real data before answering questions about assignments, materials, or grades.
+2. For every assignment mentioned, include a clickable link formatted as: [View/Submit](https://${canvasDomain}/courses/COURSE_ID/assignments/ASSIGNMENT_ID)
+3. For course files, include: [Download FILE_NAME](download_url)
+4. For Canvas pages, include: [Open Page](view_url)  
+5. For courses, include: [Open Course](https://${canvasDomain}/courses/COURSE_ID)
+6. Format responses clearly: use **bold** for assignment names, bullet points for lists.
+7. When asked about materials or content, call get_materials first to see what's available.
+8. Be specific about dates, points, and submission status.`;
+  const msgs=document.getElementById('messages');
+  let messages=[...chatHistory,{role:'user',content:userMessage}];
+  while(true){
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:ANTHROPIC_MODEL,max_tokens:2048,system,tools:TOOLS,messages})});
+    if(!res.ok){const e=await res.json().catch(()=>({error:{message:res.statusText}}));throw new Error(e.error?.message||res.statusText);}
+    const data=await res.json();
+    messages.push({role:'assistant',content:data.content});
+    if(data.stop_reason==='end_turn')return data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    if(data.stop_reason==='tool_use'){
+      document.querySelectorAll('.msg.ai').forEach(el=>{if(el.querySelector('.typing'))el.remove();});
+      const toolBlocks=data.content.filter(b=>b.type==='tool_use');
+      const toolResults=[];
+      for(const tb of toolBlocks){
+        const isWeb=tb.name==='web_search';
+        const pill=document.createElement('div');
+        pill.className=`tool-pill ${isWeb?'web-tool':'canvas-tool'}`;
+        pill.textContent=isWeb?`Searching: "${tb.input?.query||''}"…`:`Canvas: ${tb.name.replace('get_','').replace(/_/g,' ')}…`;
+        msgs.appendChild(pill);msgs.scrollTop=msgs.scrollHeight;
+        let result;
+        if(TOOL_MAP[tb.name]){try{result=JSON.stringify(await TOOL_MAP[tb.name](tb.input||{}));}catch(e){result=JSON.stringify({error:e.message});}}
+        else result=JSON.stringify({error:`Unknown tool: ${tb.name}`});
+        pill.textContent=pill.textContent.replace('…','');
+        toolResults.push({type:'tool_result',tool_use_id:tb.id,content:result});
+      }
+      messages.push({role:'user',content:toolResults});
+      addTyping();
+      continue;
+    }
+    return data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n')||'Done.';
+  }
+}
+
+async function runStudyTutor(userMessage,godMode,preferCourseOnly){
+  const courseList=courses.map(c=>`- ${c.name} (ID:${c.id}, code:${c.course_code||'N/A'})`).join('\n');
+  const focusVal=document.getElementById('tutorCourseFocus')?.value;
+  const fc=focusVal?courses.find(c=>String(c.id)===focusVal):null;
+  const focusLine=fc?`Course focus (default tools): ${fc.name} (${fc.id}).`:'All courses — pass course_id in tools when needed.';
+
+  const system=godMode
+    ?`GOD MODE (one turn): comply directly—and completely—with the student's request including full answers or code when asked, grounded in tools/web/instructions. NEVER fabricate unpublished Canvas quiz questions from APIs; admit gaps. Courses:\n${courseList}\n${focusLine}\nCanvas: https://${canvasDomain}`
+    :`You are Study Tutor: grounded, patient tutoring aligned with your Canvas courses.\nUse modules, syllabus, announcements, wiki pages, assignment & quiz instructions, and saved Library (get_saved_library) before improvisation.\nCall web_search only after Canvas is checked—or when supplemental web context is explicitly useful—and label instructor vs outside sources.\nYou cannot reliably pull locked quiz/question bank content through API paths; tutor from published instructions plus practice/strategy.\nCourses:\n${courseList}\n${focusLine}\nCanvas base: https://${canvasDomain}`;
+
+  const tutorTools=buildTutorToolList(godMode,preferCourseOnly);
+  const msgsEl=document.getElementById('tutorMessages');
+  let messages=[...tutorChatHistory,{role:'user',content:userMessage}];
+
+  while(true){
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:ANTHROPIC_MODEL,max_tokens:4096,system,tools:tutorTools,messages})});
+    if(!res.ok){const e=await res.json().catch(()=>({error:{message:res.statusText}}));throw new Error(e.error?.message||res.statusText);}
+    const data=await res.json();
+    messages.push({role:'assistant',content:data.content});
+    if(data.stop_reason==='end_turn')return data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    if(data.stop_reason==='tool_use'){
+      document.querySelectorAll('#tutorMessages .msg.ai').forEach(el=>{if(el.querySelector('.typing'))el.remove();});
+      const toolBlocks=data.content.filter(b=>b.type==='tool_use');
+      const toolResults=[];
+      for(const tb of toolBlocks){
+        const isWeb=tb.name==='web_search';
+        const pill=document.createElement('div');
+        pill.className=`tool-pill ${isWeb?'web-tool':'canvas-tool'}`;
+        pill.textContent=isWeb?`Searching: "${tb.input?.query||''}"…`:`Canvas: ${tb.name.replace('get_','').replace(/_/g,' ')}…`;
+        msgsEl.appendChild(pill);msgsEl.scrollTop=msgsEl.scrollHeight;
+        let result;
+        if(TOOL_MAP[tb.name]){try{result=JSON.stringify(await TOOL_MAP[tb.name](tb.input||{}));}catch(e){result=JSON.stringify({error:e.message});}}
+        else result=JSON.stringify({error:`Unknown tool: ${tb.name}`});
+        pill.textContent=pill.textContent.replace('…','');
+        const excerpt=(typeof result==='string'?result:'').slice(0,2600);
+        recordSource(isWeb?'web':'canvas',tb.name,tb.name,null,excerpt,tb.input?.course_id);
+        toolResults.push({type:'tool_result',tool_use_id:tb.id,content:result});
+      }
+      messages.push({role:'user',content:toolResults});
+      addTutorTyping();
+      continue;
+    }
+    return data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n')||'Done.';
+  }
+}
+
+async function send(){
+  const ta=document.getElementById('chatInput');
+  const text=ta.value.trim();
+  if(!text||isLoading)return;
+  ta.value='';ta.style.height='40px';
+  document.getElementById('emptyState')?.remove();
+  addMessage('user',text);
+  chatHistory.push({role:'user',content:text});
+  isLoading=true;document.getElementById('sendBtn').disabled=true;addTyping();
+  try{
+    const reply=await runAgent(text);
+    document.querySelectorAll('.msg.ai').forEach(el=>{if(el.querySelector('.typing'))el.remove();});
+    addMessage('ai',reply);
+    chatHistory.push({role:'assistant',content:reply});
+    if(chatHistory.length>20)chatHistory=chatHistory.slice(-20);
+  }catch(e){
+    document.querySelectorAll('.msg.ai').forEach(el=>{if(el.querySelector('.typing'))el.remove();});
+    addMessage('ai','Error: '+e.message);
+  }
+  isLoading=false;document.getElementById('sendBtn').disabled=false;
+}
+
+function renderMarkdown(text){
+  // Convert markdown to safe HTML with clickable links
+  let html = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    // links: [text](url)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,(m,label,url)=>{
+      const cls = url.includes('/assignments/')&&(label.toLowerCase().includes('submit')||label.toLowerCase().includes('turn')) ? 'submit'
+                : url.includes('/assignments/') ? 'view'
+                : url.includes('/files/') ? 'file'
+                : url.includes('/pages/') ? 'page' : 'view';
+      const icon = cls==='submit'?'📤':cls==='file'?'📄':cls==='page'?'📋':'🔗';
+      return `<a href="${url}" target="_blank" class="link-btn ${cls}">${icon} ${label}</a>`;
+    })
+    // raw URLs
+    .replace(/(?<!["\(])(https?:\/\/[^\s<>")\]]+)/g,'<a href="$1" target="_blank">$1</a>')
+    // bold
+    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/__([^_]+)__/g,'<strong>$1</strong>')
+    // italic
+    .replace(/\*([^*]+)\*/g,'<em>$1</em>')
+    // inline code
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    // headers
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    // bullet lists
+    .replace(/^[\*\-] (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs,'<ul>$1</ul>')
+    // numbered lists
+    .replace(/^\d+\. (.+)$/gm,'<li>$1</li>')
+    // paragraphs: double newline
+    .replace(/\n\n+/g,'</p><p>')
+    // single newlines
+    .replace(/\n/g,'<br/>');
+  return '<p>' + html + '</p>';
+}
+
+function addMessage(role,text){
+  const msgs=document.getElementById('messages');
+  const div=document.createElement('div');
+  div.className=`msg ${role}`;
+  const bubble=document.createElement('div');
+  if(role==='ai'){
+    bubble.className='bubble rendered';
+    bubble.innerHTML=renderMarkdown(text);
+  } else {
+    bubble.className='bubble';
+    bubble.textContent=text;
+  }
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+function addTyping(){const msgs=document.getElementById('messages');const div=document.createElement('div');div.className='msg ai';div.innerHTML='<div class="bubble" style="padding:0"><div class="typing"><span></span><span></span><span></span></div></div>';msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;return div;}
+function quickAsk(q){document.getElementById('chatInput').value=q;send();}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}const ta=e.target;ta.style.height='40px';ta.style.height=Math.min(ta.scrollHeight,120)+'px';}
+function showErr(msg){const el=document.getElementById('errMsg');el.innerHTML=msg;el.style.display='block';}
+function attachCanvasSmartLinks(rootId){
+  const root=document.getElementById(rootId);
+  if(!root||root.dataset.cvSmartLinks)return;
+  root.dataset.cvSmartLinks='1';
+  root.addEventListener('click',onCanvasSmartLinkClick);
+}
+function onCanvasSmartLinkClick(e){
+  const root=e.currentTarget;
+  const a=e.target.closest('a[href]');if(!a||!root.contains(a))return;
+  if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+  const href=a.getAttribute('href');
+  if(!href||!canvasDomain)return;
+  let u;
+  try{u=new URL(href);}catch(err){return;}
+  const ok=u.hostname===canvasDomain||u.hostname.endsWith('instructure.com');if(!ok)return;
+  const mc=u.pathname.match(/\/courses\/(\d+)\//);if(!mc)return;
+  const cid=+mc[1];
+  const course=courses.find(c=>c.id===cid);if(!course)return;
+  const ma=u.pathname.match(/\/assignments\/(\d+)/);
+  const mq=u.pathname.match(/\/quizzes\/(\d+)/);
+  if(ma){e.preventDefault();try{closeModal();}catch(x){}openContentViewer({type:'assignment',courseId:cid,course,assignmentId:+ma[1]});return;}
+  if(mq){e.preventDefault();try{closeModal();}catch(x){}openContentViewer({type:'quiz',courseId:cid,course,quizId:+mq[1]});return;}
+}
+
+// ── MATERIALS, INDEXEDDB LIBRARY, VIEWER, TUTOR UI ─────────────────────────
+let currentFile=null,fileEditMode=false;
+let tutorPinnedLibraryIds=[];
+
+function openLibraryDb(){
+  if(libDbPromise)return libDbPromise;
+  libDbPromise=new Promise((res,rej)=>{
+    const req=indexedDB.open(LIB_DB_NAME,1);
+    req.onerror=()=>rej(req.error);
+    req.onsuccess=()=>res(req.result);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains(LIB_STORE)){
+        const st=db.createObjectStore(LIB_STORE,{keyPath:'id'});
+        st.createIndex('byCourse','courseId',{unique:false});
+        st.createIndex('byType','type',{unique:false});
+      }
+    };
+  });
+  return libDbPromise;
+}
+async function libPut(rec){
+  const db=await openLibraryDb();
+  return new Promise((res,rej)=>{const tx=db.transaction(LIB_STORE,'readwrite');tx.objectStore(LIB_STORE).put(rec);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});
+}
+async function libGet(id){
+  const db=await openLibraryDb();
+  return new Promise((res,rej)=>{const rq=db.transaction(LIB_STORE,'readonly').objectStore(LIB_STORE).get(id);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);});
+}
+async function libGetAll(){
+  const db=await openLibraryDb();
+  return new Promise((res,rej)=>{const rq=db.transaction(LIB_STORE,'readonly').objectStore(LIB_STORE).getAll();rq.onsuccess=()=>res(rq.result||[]);rq.onerror=()=>rej(rq.error);});
+}
+async function libDelete(id){
+  const db=await openLibraryDb();
+  return new Promise((res,rej)=>{const tx=db.transaction(LIB_STORE,'readwrite');tx.objectStore(LIB_STORE).delete(id);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});
+}
+function makeLibraryId(courseId,type,canvasKey){return `${courseId||'na'}:${type}:${canvasKey}`;}
+
+function restoreTutorPrefs(){
+  try{
+    const p=document.getElementById('tutorPreferCourseOnly');
+    const a=document.getElementById('tutorAutosaveSources');
+    const h=document.getElementById('hideGodMode');
+    if(p)p.checked=localStorage.getItem('tutorPreferCourseOnly')==='1';
+    if(a)a.checked=localStorage.getItem('tutorAutosaveSources')==='1';
+    if(h)h.checked=localStorage.getItem('hideGodMode')==='1';
+  }catch(e){}
+}
+function persistTutorPrefs(){
+  try{
+    localStorage.setItem('tutorPreferCourseOnly',document.getElementById('tutorPreferCourseOnly')?.checked?'1':'0');
+    localStorage.setItem('tutorAutosaveSources',document.getElementById('tutorAutosaveSources')?.checked?'1':'0');
+    localStorage.setItem('hideGodMode',document.getElementById('hideGodMode')?.checked?'1':'0');
+  }catch(e){}
+}
+function stripTags(s){return (s||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();}
+function sanitizeCanvasHtml(html){
+  if(!html)return'';
+  let h=String(html);
+  h=h.replace(/href="\//g,`href="https://${canvasDomain}/`);
+  h=h.replace(/src="\//g,`src="https://${canvasDomain}/`);
+  if(typeof DOMPurify!=='undefined')return DOMPurify.sanitize(h,{ADD_ATTR:['target'],ALLOWED_TAGS:['p','br','a','ul','ol','li','strong','em','b','i','h1','h2','h3','h4','table','thead','tbody','tr','th','td','img','blockquote','code','pre','span','div'],ALLOWED_ATTR:['href','src','alt','title','class','colspan','rowspan','target']});
+  return h.replace(/</g,'&lt;');
+}
+
+function classifyAssessment(a){
+  const st=a.submission_types||[];
+  const name=(a.name||'').toLowerCase();
+  if(a.quiz_id||st.includes('online_quiz')){if(/\b(exam|final|midterm)\b/.test(name))return'exam';return'quiz';}
+  if(st.includes('discussion_topic')||a.discussion_topic)return'discussion';
+  return'assignment';
+}
+
+async function fetchAssignmentFull(courseId,assignmentId){
+  return proxyGet(`/api/v1/courses/${courseId}/assignments/${assignmentId}?include[]=submission&include[]=rubric`);
+}
+async function fetchQuizFull(courseId,quizId){
+  return proxyGet(`/api/v1/courses/${courseId}/quizzes/${quizId}`);
+}
+
+function fileIcon(f){
+  if(f.kind==='page'||f.matKind==='page')return'📄';
+  const t=(f.type||'').toLowerCase();
+  if(t.includes('pdf'))return'📕';
+  if(t.includes('word')||t.includes('document'))return'📝';
+  if(t.includes('spreadsheet')||t.includes('excel'))return'📊';
+  if(t.includes('presentation')||t.includes('powerpoint'))return'📊';
+  if(t.includes('image')||t.includes('png')||t.includes('jpg'))return'🖼️';
+  if(t.includes('video'))return'🎬';
+  if(t.includes('audio'))return'🎵';
+  if(t.includes('zip')||t.includes('archive'))return'📦';
+  if(t.includes('text'))return'📃';
+  return'📎';
+}
+function formatFileSize(bytes){
+  if(!bytes)return'';
+  if(bytes<1024)return bytes+' B';
+  if(bytes<1048576)return (bytes/1024).toFixed(1)+' KB';
+  return (bytes/1048576).toFixed(1)+' MB';
+}
+
+function initMaterialsPage(){
+  if(!courses.length)return;
+  const list=document.getElementById('filesCourseList');
+  list.innerHTML='';
+  courses.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='course-item';
+    el.innerHTML=`<div class="course-dot" style="background:${courseColors[c.id]||'#3b82f6'}"></div><div><div class="cname">${c.name}</div><div class="ccode">${c.course_code||''}</div></div>`;
+    el.onclick=()=>loadMaterialsCourse(c,el);
+    list.appendChild(el);
+  });
+}
+
+function setMatFilter(m,btn){
+  matFilter=m;
+  document.querySelectorAll('#matFilters .mat-filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const mp=document.getElementById('modulesPanel');
+  if(mp)mp.classList.toggle('open',m==='modules');
+  filterMaterials();
+}
+
+function filterMaterials(){
+  if(!activeMatCourse)return;
+  const q=(document.getElementById('filesSearch').value||'').toLowerCase();
+  let rows=materialsList.filter(it=>{
+    if(matFilter==='modules')return false;
+    if(matFilter==='all')return true;
+    return it.matKind===matFilter;
+  });
+  rows=rows.filter(it=>(it.name||'').toLowerCase().includes(q));
+  renderMaterialsCards(rows);
+}
+
+async function loadMaterialsCourse(course,el){
+  document.querySelectorAll('#filesCourseList .course-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  activeMatCourse=course;
+  const grid=document.getElementById('filesGrid');
+  const loading=document.getElementById('filesLoadingMsg');
+  loading.style.display='block';
+  grid.innerHTML='';
+  try{
+    const[assignments,files,pages,modules]=await Promise.all([
+      proxyGetAll(`/api/v1/courses/${course.id}/assignments?per_page=100&order_by=due_at&include[]=submission`,20).catch(()=>[]),
+      proxyGetAll(`/api/v1/courses/${course.id}/files?per_page=50&sort=updated_at&order=desc`,15).catch(()=>[]),
+      proxyGetAll(`/api/v1/courses/${course.id}/pages?per_page=50&sort=updated_at`,15).catch(()=>[]),
+      proxyGetAll(`/api/v1/courses/${course.id}/modules?per_page=50&include[]=items`,15).catch(()=>[])
+    ]);
+    materialsModules=Array.isArray(modules)?modules:[];
+    materialsList=[];
+    (Array.isArray(assignments)?assignments:[]).forEach(a=>{
+      const cls=classifyAssessment(a);
+      const mk=(cls==='quiz'||cls==='exam')?'quiz':'assignment';
+      materialsList.push({matKind:mk,classify:cls,id:a.id,name:a.name,due_at:a.due_at,points:a.points_possible,quiz_id:a.quiz_id,submission_types:a.submission_types,html_url:a.html_url,raw:a,course_id:course.id,course});
+    });
+    (Array.isArray(files)?files:[]).forEach(f=>{
+      materialsList.push({matKind:'file',kind:'file',id:f.id,name:f.display_name,size:f.size,type:f.content_type,url:f.url,updated:f.updated_at,course_id:course.id,course});
+    });
+    (Array.isArray(pages)?pages:[]).forEach(p=>{
+      materialsList.push({matKind:'page',kind:'page',id:p.url,name:p.title,updated:p.updated_at,page_url:p.url,course_id:course.id,course});
+    });
+    renderModulesTree();
+    filterMaterials();
+  }catch(e){
+    grid.innerHTML=`<div class="file-empty">Error: ${e.message}</div>`;
+  }
+  loading.style.display='none';
+}
+
+function renderMaterialsCards(items){
+  const grid=document.getElementById('filesGrid');
+  if(matFilter==='modules'){grid.innerHTML='<div class="file-empty" style="grid-column:1/-1">Module outline is on the right →</div>';return;}
+  if(!items.length){grid.innerHTML='<div class="file-empty"><div style="font-size:32px">📭</div><div>No items match</div></div>';return;}
+  grid.innerHTML='';
+  items.forEach(it=>{
+    const card=document.createElement('div');
+    card.className=it.matKind==='assignment'||it.matKind==='quiz'?'mat-card':'file-card';
+    const updated=it.updated?new Date(it.updated).toLocaleDateString():(it.due_at?new Date(it.due_at).toLocaleDateString():'');
+    const kindLabel=it.matKind==='quiz'?(it.classify==='exam'?'Exam':'Quiz'):it.matKind==='assignment'?'Assignment':it.matKind==='page'?'Page':'File';
+    const icon=it.matKind==='quiz'?'📝':it.matKind==='assignment'?'📌':fileIcon(it);
+    card.innerHTML=`<div class="file-card-icon">${icon}</div><div class="file-card-name">${it.name}</div><div class="file-card-meta">${kindLabel}${it.points?` · ${it.points} pts`:''}${updated?' · '+updated:''}</div>`;
+    card.onclick=()=>openMaterialsItem(it);
+    grid.appendChild(card);
+  });
+}
+
+function openMaterialsItem(it){
+  if(!activeMatCourse)return;
+  if(it.matKind==='page')openContentViewer({type:'page',courseId:activeMatCourse.id,course:activeMatCourse,pageSlug:it.page_url,title:it.name});
+  else if(it.matKind==='file')openContentViewer({type:'file',courseId:activeMatCourse.id,course:activeMatCourse,fileRef:it});
+  else openContentViewer({type:'assignment',courseId:activeMatCourse.id,course:activeMatCourse,assignmentId:it.id,quizHintId:it.quiz_id});
+}
+
+function renderModulesTree(){
+  const panel=document.getElementById('modulesPanel');
+  if(!panel)return;
+  panel.innerHTML='';
+  materialsModules.slice().sort((a,b)=>((a.position??0)-(b.position??0))).forEach(mod=>{
+    const blk=document.createElement('div');
+    blk.className='mod-block';
+    const hdr=document.createElement('div');
+    hdr.className='mod-name';
+    hdr.innerHTML=`<span>${mod.name||'Module'}</span><span>▾</span>`;
+    hdr.onclick=()=>blk.classList.toggle('expanded');
+    const itemsDiv=document.createElement('div');
+    itemsDiv.className='mod-items';
+    (mod.items||[]).slice().sort((a,b)=>((a.position??0)-(b.position??0))).forEach(mi=>{
+      const row=document.createElement('div');
+      row.className='mod-item';
+      row.textContent=`${mi.type||'?'}: ${mi.title||''}`;
+      row.onclick=e=>{e.stopPropagation();openModuleItem(mi);};
+      itemsDiv.appendChild(row);
+    });
+    blk.appendChild(hdr);
+    blk.appendChild(itemsDiv);
+    panel.appendChild(blk);
+  });
+}
+
+function openModuleItem(mi){
+  if(!activeMatCourse)return;
+  const c=activeMatCourse;
+  const t=mi.type||'';
+  if(t==='Assignment')openContentViewer({type:'assignment',courseId:c.id,course:c,assignmentId:mi.content_id});
+  else if(t==='Quiz')openContentViewer({type:'quiz',courseId:c.id,course:c,quizId:mi.content_id});
+  else if(t==='Page')openContentViewer({type:'page',courseId:c.id,course:c,pageSlug:mi.page_url,title:mi.title});
+  else if(t==='File')openContentViewer({type:'file',courseId:c.id,course:c,fileRef:{kind:'file',id:mi.content_id,name:mi.title,url:''}});
+  else if(t==='ExternalUrl'||t==='ExternalTool'){
+    const url=mi.external_url||mi.url||'#';
+    openContentViewer({type:'external',courseId:c.id,course:c,title:mi.title||'Link',externalUrl:url});
+  }else openContentViewer({type:'external',courseId:c.id,course:c,title:mi.title||t,externalUrl:mi.html_url||mi.url||''});
+}
+
+async function openContentViewer(spec){
+  viewerCtx={...spec};
+  viewerLoad=null;
+  currentFile=null;
+  fileEditMode=false;
+  const ov=document.getElementById('fileViewerOverlay');
+  const fvTitle=document.getElementById('fvTitle');
+  const badge=document.getElementById('cvTypeBadge');
+  const meta=document.getElementById('cvMetaLine');
+  const qm=document.getElementById('cvQuizMeta');
+  const side=document.getElementById('cvSideMeta');
+  const body=document.getElementById('fvBody');
+  const editBtn=document.getElementById('fvEditBtn');
+  const saveBtn=document.getElementById('fvSaveBtn');
+  editBtn.style.display='none';
+  saveBtn.style.display='none';
+  qm.style.display='none';
+  side.style.display='none';
+  side.innerHTML='';
+  document.getElementById('cvLibHint').textContent='';
+  ov.classList.add('open');
+  body.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted)">Loading…</div>';
+
+  const base=`https://${canvasDomain}`;
+
+  try{
+    if(spec.type==='library'){
+      const r=await libGet(spec.recordId);
+      if(!r){body.innerHTML='<p>Not found in library.</p>';return;}
+      viewerLoad={mode:'library',record:r};
+      fvTitle.textContent=r.title;
+      badge.textContent=r.type;
+      meta.textContent=`Saved ${new Date(r.savedAt||Date.now()).toLocaleString()} · ${r.courseName||''}`;
+      body.innerHTML=`<div class="file-content-view">${sanitizeCanvasHtml(r.contentHtml||'')||'<p><i>No HTML body</i></p>'}</div>`;
+      document.getElementById('cvLibHint').textContent=r.notes?`Notes: ${r.notes}`:'';
+      return;
+    }
+    if(spec.type==='external'){
+      viewerLoad={mode:'external',spec};
+      fvTitle.textContent=spec.title||'External';
+      badge.textContent='External';
+      meta.textContent=spec.externalUrl||'';
+      body.innerHTML=`<p style="margin-bottom:12px">This item opens outside the app.</p><a class="modal-btn primary" href="${spec.externalUrl}" target="_blank" rel="noopener">Open link</a>`;
+      return;
+    }
+    if(spec.type==='page'){
+      const data=await proxyGet(`/api/v1/courses/${spec.courseId}/pages/${encodeURIComponent(spec.pageSlug)}`).catch(()=>null);
+      if(!data){body.innerHTML='Could not load page.';return;}
+      const html=sanitizeCanvasHtml(data.body||'');
+      const plain=stripTags(data.body||'');
+      viewerLoad={mode:'page',page:data,course:spec.course,plain};
+      currentFile={kind:'page',name:data.title,page_url:spec.pageSlug,course:spec.course,rawContent:data.body,textContent:plain};
+      fvTitle.textContent=data.title;
+      badge.textContent='Page';
+      meta.textContent=spec.course.name;
+      body.innerHTML=`<div class="file-content-view">${html||'<p><i>Empty</i></p>'}</div>`;
+      editBtn.style.display='inline-block';
+      editBtn.textContent='Edit';
+      updateLibraryHintForViewer();
+      return;
+    }
+    if(spec.type==='file'){
+      let f=spec.fileRef;
+      if(f.url)currentFile={...f,course:spec.course};
+      else{
+        const full=await proxyGet(`/api/v1/courses/${spec.courseId}/files/${f.id}`).catch(()=>null);
+        if(full)f={kind:'file',id:full.id,name:full.display_name,size:full.size,type:full.content_type,url:full.url,updated:full.updated_at,course_id:spec.courseId};
+        currentFile={...f,course:spec.course};
+      }
+      viewerLoad={mode:'file',file:currentFile};
+      fvTitle.textContent=currentFile.name;
+      badge.textContent='File';
+      meta.textContent=`${formatFileSize(currentFile.size)} ${currentFile.type?'· '+currentFile.type:''}`;
+      const pdf=(currentFile.type||'').toLowerCase().includes('pdf');
+      body.innerHTML=`
+        <div style="padding:0.5rem 0 1rem">
+          <div style="font-size:28px;margin-bottom:0.75rem">${fileIcon(currentFile)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:1rem">${spec.course.name}</div>
+          ${currentFile.url&&pdf?`<iframe src="${currentFile.url}" style="width:100%;height:520px;border:0.5px solid var(--border);border-radius:8px"></iframe>`:''}
+        </div>`;
+      updateLibraryHintForViewer();
+      return;
+    }
+    if(spec.type==='quiz'){
+      const quiz=await fetchQuizFull(spec.courseId,spec.quizId).catch(()=>null);
+      if(!quiz){body.innerHTML='Could not load quiz metadata from Canvas.';return;}
+      viewerLoad={mode:'quiz',quiz,course:spec.course,plain:stripTags(quiz.description||'')};
+      fvTitle.textContent=quiz.title||'Quiz';
+      badge.textContent='Quiz';
+      meta.textContent=`${spec.course.name}${quiz.points_possible!=null?' · '+quiz.points_possible+' pts':''}`;
+      body.innerHTML=`<div class="file-content-view">${sanitizeCanvasHtml(quiz.description||'')||'<p><i>No description</i></p>'}</div>`;
+      qm.style.display='block';
+      qm.innerHTML=[
+        quiz.question_count!=null?`<div><strong>Questions:</strong> ${quiz.question_count}</div>`:'',
+        quiz.time_limit?`<div><strong>Time limit:</strong> ${quiz.time_limit} min</div>`:'',
+        quiz.allowed_attempts!=null?`<div><strong>Attempts:</strong> ${quiz.allowed_attempts}</div>`:'',
+        quiz.lock_at?`<div><strong>Locks:</strong> ${new Date(quiz.lock_at).toLocaleString()}</div>`:''
+      ].join('');
+      side.style.display='block';
+      side.innerHTML=`<a class="modal-btn primary" style="display:inline-block;text-decoration:none;margin-top:6px" href="${base}/courses/${spec.courseId}/quizzes/${quiz.id}" target="_blank">Take in Canvas</a>`;
+      updateLibraryHintForViewer();
+      return;
+    }
+    if(spec.type==='assignment'){
+      const a=await fetchAssignmentFull(spec.courseId,spec.assignmentId);
+      if(!a){body.innerHTML='Assignment not found.';return;}
+      let quiz=null;
+      if(a.quiz_id)quiz=await fetchQuizFull(spec.courseId,a.quiz_id).catch(()=>null);
+      const cls=classifyAssessment(a);
+      const title=a.name;
+      fvTitle.textContent=title;
+      badge.textContent=cls==='exam'?'Exam':cls==='quiz'?'Quiz':cls==='discussion'?'Discussion':'Assignment';
+      let dueLine=a.due_at?`Due: ${new Date(a.due_at).toLocaleString()}`:'No due date';
+      meta.textContent=`${spec.course.name} · ${dueLine} · ${a.points_possible!=null?a.points_possible+' pts':'—'}`;
+      let parts=[];
+      if(a.description)parts.push(a.description);
+      if(quiz?.description)parts.push(`<h3>Quiz instructions</h3>${quiz.description}`);
+      const merged=parts.join('<hr style="margin:1rem 0"/>');
+      const html=sanitizeCanvasHtml(merged);
+      const plain=stripTags(merged);
+      viewerLoad={mode:'assignment',assignment:a,quiz,course:spec.course,plain};
+      body.innerHTML=`<div class="file-content-view">${html||'<p><i>No description</i></p>'}</div>`;
+      if(quiz){
+        qm.style.display='block';
+        qm.innerHTML=[
+          quiz.question_count!=null?`<div><strong>Questions:</strong> ${quiz.question_count}</div>`:'',
+          quiz.time_limit?`<div><strong>Time limit:</strong> ${quiz.time_limit} min</div>`:'',
+          quiz.allowed_attempts!=null?`<div><strong>Attempts:</strong> ${quiz.allowed_attempts}</div>`:'',
+          quiz.lock_at?`<div><strong>Locks:</strong> ${new Date(quiz.lock_at).toLocaleString()}</div>`:'',
+          quiz.unlock_at?`<div><strong>Unlocks:</strong> ${new Date(quiz.unlock_at).toLocaleString()}</div>`:''
+        ].join('');
+        side.style.display='block';
+        side.innerHTML=`<div style="font-weight:600;color:var(--navy);margin-bottom:6px">Assessment</div>
+          <p style="margin-bottom:8px">Quiz questions may only be visible inside Canvas.</p>
+          <a class="modal-btn primary" style="display:inline-block;text-decoration:none" href="${base}/courses/${spec.courseId}/quizzes/${quiz.id}" target="_blank">Take in Canvas</a>`;
+      }
+      updateLibraryHintForViewer();
+      return;
+    }
+  }catch(e){
+    body.innerHTML=`<p style="color:var(--rust)">${e.message}</p>`;
+  }
+}
+
+async function updateLibraryHintForViewer(){
+  const hint=document.getElementById('cvLibHint');
+  if(!viewerCtx||viewerCtx.type==='library'){hint.textContent='';return;}
+  const id=libraryIdFromViewer();
+  if(!id)return;
+  const ex=await libGet(id);
+  hint.textContent=ex?'Saved in Library (click Save to update)':'Not saved yet';
+}
+
+function libraryIdFromViewer(){
+  if(!viewerLoad||!viewerCtx)return null;
+  const c=viewerCtx.courseId;
+  if(viewerLoad.mode==='page')return makeLibraryId(c,'page',viewerCtx.pageSlug);
+  if(viewerLoad.mode==='file')return makeLibraryId(c,'file',String(viewerCtx.fileRef?.id||viewerLoad.file?.id));
+  if(viewerLoad.mode==='quiz')return makeLibraryId(c,'quiz',String(viewerCtx.quizId||viewerLoad.quiz?.id));
+  if(viewerLoad.mode==='assignment')return makeLibraryId(c,'assignment',String(viewerCtx.assignmentId));
+  return null;
+}
+
+function buildViewerLibraryRecord(){
+  if(!viewerLoad||!viewerCtx)return null;
+  const canvasBase=`https://${canvasDomain}`;
+  const cid=viewerCtx.courseId;
+  const course=courses.find(x=>x.id===cid)||viewerCtx.course;
+  const cc=course.course_code||'';
+  let type='assignment',title='',contentHtml='',contentText='',canvasKey='',sourceUrl='';
+  if(viewerLoad.mode==='library')return viewerLoad.record;
+  if(viewerLoad.mode==='page'){
+    type='page';title=viewerLoad.page.title;contentHtml=sanitizeCanvasHtml(viewerLoad.page.body||'');contentText=viewerLoad.plain||'';canvasKey=String(viewerCtx.pageSlug);sourceUrl=`${canvasBase}/courses/${cid}/pages/${encodeURIComponent(viewerCtx.pageSlug)}`;
+  }
+  if(viewerLoad.mode==='file'){
+    type='file';title=viewerLoad.file.name;contentHtml='<p>File snapshot (binary not embedded). Use Open/Download.</p>';contentText=title;
+    canvasKey=String(viewerLoad.file.id);sourceUrl=`${canvasBase}/courses/${cid}/files/${viewerLoad.file.id}`;
+  }
+  if(viewerLoad.mode==='quiz'){
+    type='quiz';title=viewerLoad.quiz.title||'Quiz';contentHtml=sanitizeCanvasHtml(viewerLoad.quiz.description||'');contentText=stripTags(viewerLoad.quiz.description||'');canvasKey=String(viewerLoad.quiz.id);sourceUrl=`${canvasBase}/courses/${cid}/quizzes/${viewerLoad.quiz.id}`;
+  }
+  if(viewerLoad.mode==='assignment'){
+    type=classifyAssessment(viewerLoad.assignment)==='quiz'||classifyAssessment(viewerLoad.assignment)==='exam'?'quiz':'assignment';
+    title=viewerLoad.assignment.name;
+    const parts=[];
+    if(viewerLoad.assignment.description)parts.push(viewerLoad.assignment.description);
+    if(viewerLoad.quiz?.description)parts.push(`<h3>Quiz</h3>${viewerLoad.quiz.description}`);
+    contentHtml=sanitizeCanvasHtml(parts.join('<hr/>'));
+    contentText=stripTags(parts.join(' '));
+    canvasKey=String(viewerCtx.assignmentId);
+    sourceUrl=viewerLoad.assignment.html_url||`${canvasBase}/courses/${cid}/assignments/${viewerCtx.assignmentId}`;
+  }
+  if(viewerLoad.mode==='external')return null;
+  const id=makeLibraryId(cid,type,canvasKey);
+  return{
+    id,type,courseId:cid,courseName:course.name,courseCode:cc,title,savedAt:Date.now(),updatedAt:Date.now(),
+    tags:[],notes:'',contentHtml,contentText,meta:{},sourceUrl
+  };
+}
+
+async function saveViewerToLibraryAction(){
+  const rec=buildViewerLibraryRecord();
+  if(!rec){alert('Nothing to save for this item.');return;}
+  const existing=await libGet(rec.id);
+  if(existing){rec.tags=existing.tags;rec.notes=existing.notes;}
+  await libPut(rec);
+  document.getElementById('cvLibHint').textContent='Saved to Library';
+  refreshLibraryList();
+}
+
+async function refreshViewerFromCanvas(){
+  if(!viewerCtx)return;
+  openContentViewer(viewerCtx);
+}
+
+function openCanvasViewerUrl(){
+  const base=`https://${canvasDomain}`;
+  if(!viewerCtx)return;
+  if(viewerCtx.type==='library'){if(viewerLoad?.record?.sourceUrl)window.open(viewerLoad.record.sourceUrl,'_blank');return;}
+  if(viewerCtx.type==='page')window.open(`${base}/courses/${viewerCtx.courseId}/pages/${encodeURIComponent(viewerCtx.pageSlug)}`,'_blank');
+  else if(viewerCtx.type==='file')window.open(`${base}/courses/${viewerCtx.courseId}/files/${viewerCtx.fileRef.id}`,'_blank');
+  else if(viewerCtx.type==='assignment')window.open(viewerLoad?.assignment?.html_url||`${base}/courses/${viewerCtx.courseId}/assignments/${viewerCtx.assignmentId}`,'_blank');
+  else if(viewerCtx.type==='quiz')window.open(`${base}/courses/${viewerCtx.courseId}/quizzes/${viewerCtx.quizId}`,'_blank');
+}
+
+function downloadCurrentViewerFile(){
+  if(viewerLoad?.mode==='file'&&currentFile?.url)window.open(currentFile.url,'_blank');
+  else downloadCurrentFile();
+}
+
+function askAssistantAboutViewer(){
+  closeFileViewer();
+  showPage('chatPage',document.getElementById('tabChat'));
+  const t=`Help me understand this material${viewerLoad?.assignment?': '+viewerLoad.assignment.name:viewerLoad?.page?': '+viewerLoad.page.title:''}.`;
+  document.getElementById('chatInput').value=t;
+  document.getElementById('chatInput').focus();
+}
+
+function studyTutorAboutViewer(){
+  const preload=viewerLoad?.plain?viewerLoadTrim(viewerLoad.plain):'';
+  const title=viewerLoad?.assignment?.name||viewerLoad?.page?.title||'';
+  closeFileViewer();
+  showPage('tutorPage',document.getElementById('tabTutor'));
+  if(viewerCtx?.courseId)document.getElementById('tutorCourseFocus').value=String(viewerCtx.courseId);
+  document.getElementById('tutorInput').value=(title?'['+title+'] ':'')+(preload?'Context:\n'+preload.slice(0,4000)+'\n\n':'')+'Explain this in the terminology of my course.';
+  document.getElementById('tutorInput').focus();
+}
+function viewerLoadTrim(s){return (s||'').slice(0,12000);}
+
+function toggleFileEdit(){
+  if(!currentFile||currentFile.kind!=='page')return;
+  fileEditMode=!fileEditMode;
+  const body=document.getElementById('fvBody');
+  const editBtn=document.getElementById('fvEditBtn');
+  const saveBtn=document.getElementById('fvSaveBtn');
+  if(fileEditMode){
+    body.innerHTML=`<textarea class="file-content-edit" id="fileEditArea">${currentFile.textContent||''}</textarea>`;
+    editBtn.textContent='Preview';saveBtn.style.display='inline-block';
+  }else{
+    body.innerHTML=`<div class="file-content-view">${sanitizeCanvasHtml(currentFile.rawContent||'')}</div>`;
+    editBtn.textContent='Edit';saveBtn.style.display='none';
+  }
+}
+function saveFileEdit(){
+  const ta=document.getElementById('fileEditArea');if(!ta)return;
+  const blob=new Blob([ta.value],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=(currentFile.name||'page')+'.txt';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),800);
+}
+function downloadCurrentFile(){if(currentFile?.url)window.open(currentFile.url,'_blank');}
+function sendFileToChat(){
+  if(!currentFile)return;
+  closeFileViewer();
+  showPage('chatPage',document.getElementById('tabChat'));
+  const name=currentFile.name;
+  const ctx=currentFile.textContent?currentFile.textContent.slice(0,1000):'';
+  document.getElementById('chatInput').value=`Tell me about "${name}" from my course.${ctx?' Excerpt: '+ctx:''}`;
+  document.getElementById('chatInput').focus();
+}
+function closeFileViewer(){document.getElementById('fileViewerOverlay').classList.remove('open');}
+
+async function refreshLibraryList(){
+  const grid=document.getElementById('libraryGrid');
+  const note=document.getElementById('libStorageNote');
+  if(!grid)return;
+  let items=[];
+  try{items=await libGetAll();}catch(e){items=[];}
+  const q=(document.getElementById('libSearch')?.value||'').toLowerCase();
+  const cf=document.getElementById('libCourseFilter')?.value||'';
+  const tf=document.getElementById('libTypeFilter')?.value||'';
+  items=items.filter(r=>{
+    if(cf&&String(r.courseId)!==cf)return false;
+    if(tf&&r.type!==tf)return false;
+    if(q){const blob=(r.title+' '+(r.contentText||'')+' '+(r.notes||'')).toLowerCase();if(!blob.includes(q))return false;}
+    return true;
+  });
+  items.sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+  grid.innerHTML='';
+  if(note)note.textContent=`${items.length} item(s) · local IndexedDB`;
+  items.forEach(r=>{
+    const card=document.createElement('div');
+    card.className='mat-card';
+    card.innerHTML=`<div class="file-card-icon">📚</div><div class="file-card-name">${r.title}</div><div class="file-card-meta">${r.type} · ${r.courseName||''}</div>`;
+    card.onclick=()=>openContentViewer({type:'library',recordId:r.id});
+    grid.appendChild(card);
+  });
+  renderTutorPinPicker(items);
+}
+function renderTutorPinPicker(items){
+  const el=document.getElementById('tutorPinPicker');
+  if(!el)return;
+  el.innerHTML='';
+  items.slice(0,40).forEach(r=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:4px';
+    const pin=document.createElement('button');
+    pin.type='button';
+    pin.className='small-btn';
+    pin.textContent=tutorPinnedLibraryIds.includes(r.id)?'✓':'＋';
+    pin.onclick=e=>{e.stopPropagation();toggleTutorPin(r.id);};
+    row.innerHTML=`<span style="overflow:hidden;text-overflow:ellipsis">${r.title.slice(0,42)}</span>`;
+    row.insertBefore(pin,row.firstChild);
+    el.appendChild(row);
+  });
+}
+function toggleTutorPin(id){
+  const ix=tutorPinnedLibraryIds.indexOf(id);
+  if(ix>=0)tutorPinnedLibraryIds.splice(ix,1);else tutorPinnedLibraryIds.push(id);
+  renderTutorPinsStrip();
+  refreshLibraryList();
+}
+function renderTutorPinsStrip(){
+  const strip=document.getElementById('tutorPinnedStrip');
+  if(!strip)return;
+  strip.innerHTML='';
+  tutorPinnedLibraryIds.forEach(id=>{
+    libGet(id).then(r=>{
+      if(!r)return;
+      const chip=document.createElement('div');
+      chip.className='tutor-pin';
+      const lab=document.createElement('span');lab.textContent=r.title.slice(0,48);
+      const btn=document.createElement('button');btn.type='button';btn.setAttribute('aria-label','Remove pin');btn.textContent='×';
+      btn.onclick=()=>toggleTutorPin(id);
+      chip.appendChild(lab);chip.appendChild(btn);
+      strip.appendChild(chip);
+    });
+  });
+}
+function showAddTextbookForm(){
+  populateTutorAndLibraryUI();
+  document.getElementById('addTextbookBar').style.display='block';
+}
+async function saveTextbookEntry(){
+  const title=document.getElementById('tbTitle').value.trim();
+  const cid=+document.getElementById('tbCourse').value;
+  if(!title||!cid){alert('Title and course required.');return;}
+  const course=courses.find(c=>c.id===cid);
+  const notes=document.getElementById('tbNotes').value.trim();
+  const url=document.getElementById('tbUrl').value.trim();
+  const id=makeLibraryId(cid,'textbook',String(Date.now()));
+  await libPut({id,type:'textbook',courseId:cid,courseName:course.name,courseCode:course.course_code||'',title,savedAt:Date.now(),updatedAt:Date.now(),tags:[],notes,contentHtml:notes?`<p>${notes.replace(/</g,'')}</p>`:'',contentText:notes,meta:{url},sourceUrl:url||''});
+  document.getElementById('addTextbookBar').style.display='none';
+  refreshLibraryList();
+}
+async function exportLibraryJson(){
+  const all=await libGetAll();
+  downloadBlob(JSON.stringify(all,null,2),'application/json','canvas-library-export.json');
+}
+async function importLibraryJson(ev){
+  const f=ev.target.files?.[0];if(!f)return;
+  const text=await f.text();
+  const arr=JSON.parse(text);
+  if(!Array.isArray(arr))return;
+  for(const row of arr){if(row.id)await libPut(row);}
+  refreshLibraryList();
+  ev.target.value='';
+}
+
+function clearTutorChat(){
+  tutorChatHistory=[];
+  document.getElementById('tutorMessages').innerHTML='';
+}
+function addTutorMessage(role,text){
+  const msgs=document.getElementById('tutorMessages');
+  const div=document.createElement('div');
+  div.className=`msg ${role}`;
+  const bubble=document.createElement('div');
+  if(role==='ai'){bubble.className='bubble rendered';bubble.innerHTML=renderMarkdown(text);}
+  else{bubble.className='bubble';bubble.textContent=text;}
+  div.appendChild(bubble);msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+}
+function addTutorTyping(){
+  const msgs=document.getElementById('tutorMessages');
+  const div=document.createElement('div');div.className='msg ai';div.innerHTML='<div class="bubble" style="padding:0"><div class="typing"><span></span><span></span><span></span></div></div>';
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;return div;
+}
+function tutorChip(t){document.getElementById('tutorInput').value=t;}
+function handleTutorKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendTutor();}}
+
+function parseGodMode(raw){
+  if(document.getElementById('hideGodMode')?.checked)return{god:false,text:raw};
+  const s=String(raw||'').trim();
+  const re=/^(god\s*mode\s*:?|godmode\s*:?)\s*/i;
+  if(re.test(s))return{god:true,text:s.replace(re,'').trim()};
+  return{god:false,text:s};
+}
+
+function recordSource(kind,toolName,label,url,excerpt,courseId){
+  lastReplySources.push({kind,toolName,label:label||toolName,url:url||'',excerpt:(excerpt||'').slice(0,3500),courseId:courseId??null});
+}
+
+function buildTutorToolList(god,preferCourseOnly){
+  const defs=TUTOR_CANVAS_TOOLS_WITHOUT_WEB.slice();
+  if(god||!preferCourseOnly)return[WEB_TOOL_DEF,...defs];
+  return defs;
+}
+
+async function sendTutor(){
+  const ta=document.getElementById('tutorInput');
+  const raw=ta.value.trim();
+  if(!raw||isTutorLoading)return;
+  const {god,text}=parseGodMode(raw);
+  ta.value='';ta.style.height='40px';
+  persistTutorPrefs();
+  lastReplySources=[];
+  document.getElementById('tutorGodBanner').style.display=god?'block':'none';
+  addTutorMessage('user',raw);
+  tutorChatHistory.push({role:'user',content:raw});
+  isTutorLoading=true;document.getElementById('tutorSendBtn').disabled=true;addTutorTyping();
+  const prefer=document.getElementById('tutorPreferCourseOnly')?.checked;
+  let pinPrefix='';
+  if(tutorPinnedLibraryIds.length){
+    const chunks=[];
+    for(const pid of tutorPinnedLibraryIds){
+      const r=await libGet(pid);
+      if(r)chunks.push(`### ${r.title}\n${(r.contentText||stripTags(r.contentHtml||'')).slice(0,8000)}`);
+    }
+    if(chunks.length)pinPrefix=`The student pinned saved materials:\n---\n${chunks.join('\n---\n')}\n---\n\n`;
+  }
+  const userMessage=pinPrefix+text;
+  try{
+    const reply=await runStudyTutor(userMessage,god,prefer);
+    document.querySelectorAll('#tutorMessages .msg.ai').forEach(el=>{if(el.querySelector('.typing'))el.remove();});
+    addTutorMessage('ai',reply);
+    tutorChatHistory.push({role:'assistant',content:reply});
+    const srcLine=lastReplySources.slice(0,6).map(s=>`${s.kind==='web'?'Web':'Canvas'} — ${s.label}`).join(' · ');
+    document.getElementById('tutorSourceLine').textContent=srcLine?`Sources: ${srcLine}`:'';
+    if(document.getElementById('tutorAutosaveSources')?.checked)await saveTutorSourcesBundle(true);
+  }catch(e){
+    document.querySelectorAll('#tutorMessages .msg.ai').forEach(el=>{if(el.querySelector('.typing'))el.remove();});
+    addTutorMessage('ai','Error: '+e.message);
+  }
+  isTutorLoading=false;document.getElementById('tutorSendBtn').disabled=false;
+}
+
+async function saveTutorSourcesBundle(silent){
+  if(!lastReplySources.length){if(!silent)alert('No sources recorded for the last reply.');return;}
+  const focus=document.getElementById('tutorCourseFocus')?.value;
+  const cid=focus?+focus:(courses[0]?.id)||0;
+  const course=courses.find(c=>c.id===cid)||{name:'',course_code:'',id:cid};
+  const id=makeLibraryId(cid,'tutor_sources_bundle',String(Date.now()));
+  const title=`Tutor session ${new Date().toLocaleString()}`;
+  const contentText=lastReplySources.map(s=>`${s.label}\n${s.excerpt}`).join('\n\n---\n\n');
+  await libPut({id,type:'tutor_sources_bundle',courseId:cid,courseName:course.name,courseCode:course.course_code||'',title,savedAt:Date.now(),updatedAt:Date.now(),tags:['auto'],notes:'',contentHtml:`<pre style="white-space:pre-wrap;font-size:12px">${contentText.replace(/</g,'&lt;')}</pre>`,contentText,meta:{sources:lastReplySources},sourceUrl:''});
+  if(!silent)alert('Saved source bundle to Library.');
+  refreshLibraryList();
+}
+
+// ── PLANNER STATE ────────────────────────────────────────────────────────
+const PLANNER_KEY = 'canvasPlanner_v1';
+let plannerWeekStart = getWeekStart(new Date());
+let plannerData = {};
+let plannerView = 'grid';
+let editingBlockId = null;
+
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const HOURS_START = 6;   // 6:00 AM
+const HOURS_END   = 23;  // 11:00 PM (last row 11:30)
+const SLOTS = (HOURS_END - HOURS_START) * 2; // 34 slots (6:00–10:30)
+
+function getWeekStart(d) {
+  const s = new Date(d);
+  s.setHours(0,0,0,0);
+  s.setDate(s.getDate() - s.getDay()); // Sunday
+  return s;
+}
+
+function weekKey(d) {
+  const y = d.getFullYear();
+  const s = new Date(d); s.setHours(0,0,0,0); s.setDate(s.getDate() - s.getDay());
+  const jan1 = new Date(y,0,1);
+  const week = Math.ceil(((s - jan1)/86400000 + jan1.getDay()+1)/7);
+  return `${y}-W${String(week).padStart(2,'0')}`;
+}
+
+function loadPlannerData() {
+  try { plannerData = JSON.parse(localStorage.getItem(PLANNER_KEY)||'{}'); } catch(e) { plannerData = {}; }
+}
+function savePlannerData() {
+  try { localStorage.setItem(PLANNER_KEY, JSON.stringify(plannerData)); } catch(e) {}
+}
+function getWeekData(wk) {
+  if (!plannerData[wk]) plannerData[wk] = { blocks: [], tid: {0:{tasks:[],reflection:''},1:{tasks:[],reflection:''},2:{tasks:[],reflection:''},3:{tasks:[],reflection:''},4:{tasks:[],reflection:''},5:{tasks:[],reflection:''},6:{tasks:[],reflection:''}}, hours:{sleep:56,class:15,study:20,work:0} };
+  return plannerData[wk];
+}
+
+// ── PLANNER INIT ─────────────────────────────────────────────────────────
+function initPlanner() {
+  loadPlannerData();
+  plannerWeekStart = getWeekStart(new Date());
+  renderPlanner();
+  calcHours();
+}
+
+function changeWeek(d) { plannerWeekStart.setDate(plannerWeekStart.getDate() + d*7); renderPlanner(); }
+function goThisWeek() { plannerWeekStart = getWeekStart(new Date()); renderPlanner(); }
+function setPlannerView(v) {
+  plannerView = v;
+  document.getElementById('pvGrid').classList.toggle('active', v==='grid');
+  document.getElementById('pvTID').classList.toggle('active', v==='tid');
+  document.getElementById('plannerGridView').style.display = v==='grid' ? '' : 'none';
+  document.getElementById('plannerTIDView').style.display = v==='tid' ? '' : 'none';
+  document.getElementById('tidSection').style.display = v==='grid' ? '' : 'none';
+}
+
+function calcHours() {
+  const sleep = +document.getElementById('hrsSleep').value || 0;
+  const cls   = +document.getElementById('hrsClass').value || 0;
+  const study = +document.getElementById('hrsStudy').value || 0;
+  const work  = +document.getElementById('hrsWork').value || 0;
+  const free  = 168 - sleep - cls - study - work;
+  const el = document.getElementById('hrsResult');
+  el.textContent = `${free} hrs discretionary`;
+  el.className = 'hours-result' + (free < 10 ? ' low' : '');
+  // save to week
+  const wk = weekKey(plannerWeekStart);
+  const wd = getWeekData(wk);
+  wd.hours = {sleep,class:cls,study,work};
+  savePlannerData();
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────────
+function renderPlanner() {
+  const wk = weekKey(plannerWeekStart);
+  const wd = getWeekData(wk);
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Update hour inputs from saved data
+  if (wd.hours) {
+    document.getElementById('hrsSleep').value = wd.hours.sleep ?? 56;
+    document.getElementById('hrsClass').value = wd.hours.class ?? 15;
+    document.getElementById('hrsStudy').value = wd.hours.study ?? 20;
+    document.getElementById('hrsWork').value  = wd.hours.work ?? 0;
+    calcHours();
+  }
+
+  // Week label
+  const end = new Date(plannerWeekStart); end.setDate(end.getDate()+6);
+  document.getElementById('plannerWeekLabel').textContent =
+    `${plannerWeekStart.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+
+  // Count canvas assignments this week
+  const weekAssignments = getWeekAssignments();
+  document.getElementById('plannerAssignmentCount').textContent =
+    weekAssignments.length ? `${weekAssignments.length} assignment${weekAssignments.length>1?'s':''} due this week` : '';
+
+  // Build grid
+  buildGrid(wd, today, weekAssignments);
+  // Build TID bottom
+  buildTID('tidGridBottom', wd, today, wk);
+  // Build TID view (same data, separate element)
+  buildTID('tidGrid', wd, today, wk);
+}
+
+function getWeekAssignments() {
+  if (!allAssignments || !allAssignments.length) return [];
+  const results = [];
+  for (let d = 0; d < 7; d++) {
+    const day = new Date(plannerWeekStart);
+    day.setDate(day.getDate() + d);
+    const dayStr = day.toDateString();
+    allAssignments.forEach(a => {
+      if (!a.due_at) return;
+      const due = new Date(a.due_at);
+      if (due.toDateString() === dayStr) {
+        results.push({ ...a, dayIndex: d, slot: Math.max(0, (due.getHours() - HOURS_START) * 2 + Math.floor(due.getMinutes()/30)) });
+      }
+    });
+  }
+  return results;
+}
+
+function buildGrid(wd, today, weekAssignments) {
+  const grid = document.getElementById('plannerGrid');
+  const dayDates = Array.from({length:7},(_,i)=>{const d=new Date(plannerWeekStart);d.setDate(d.getDate()+i);return d;});
+
+  let html = `<div class="grid-corner"><span style="font-size:9px;color:var(--muted)">TIME</span></div>`;
+  dayDates.forEach((d,i) => {
+    const isToday = d.toDateString() === today.toDateString();
+    html += `<div class="grid-day-hdr${isToday?' today-col':''}">
+      <div class="grid-day-name">${DAYS[i]}</div>
+      <div class="grid-day-date">${d.getDate()}</div>
+    </div>`;
+  });
+
+  // Time slot rows
+  for (let s = 0; s < SLOTS; s++) {
+    const totalMins = (HOURS_START * 60) + s * 30;
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    const isHour = m === 0;
+    const h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+    const ampm = h >= 12 ? 'pm' : 'am';
+    const label = isHour ? `${h12}${ampm}` : '';
+
+    html += `<div class="time-label${isHour?' hour-mark':''}"><span>${label}</span></div>`;
+
+    dayDates.forEach((d,di) => {
+      const isToday = d.toDateString() === today.toDateString();
+      html += `<div class="grid-cell${isHour?' hour-mark':''}${isToday?' today-col':''}" data-day="${di}" data-slot="${s}" onclick="cellClick(${di},${s})"></div>`;
+    });
+  }
+
+  grid.innerHTML = html;
+
+  // Render user blocks
+  wd.blocks.forEach(b => renderBlockInGrid(b));
+
+  // Render canvas assignment blocks
+  weekAssignments.forEach(a => {
+    if (a.slot < 0 || a.slot >= SLOTS) return;
+    renderAssignmentInGrid(a);
+  });
+}
+
+function slotToCell(dayIndex, slot) {
+  // grid has 1 header row: row 0 is headers, rows 1+ are time slots
+  // each row has: time-label + 7 cells
+  // cell index in the flat grid: header row = 8 items, then each slot row = 8 items
+  // day column di = position di+1 in each slot row
+  const cellsPerRow = 8;
+  const headerCells = 8;
+  const rowStart = headerCells + slot * cellsPerRow;
+  const cellIdx = rowStart + dayIndex + 1;
+  return document.getElementById('plannerGrid').children[cellIdx];
+}
+
+function renderBlockInGrid(b) {
+  const cell = slotToCell(b.day, b.slot);
+  if (!cell) return;
+  const existing = cell.querySelector('.cell-block[data-block-id]');
+  if (existing) existing.remove();
+  const div = document.createElement('div');
+  div.className = 'cell-block';
+  div.setAttribute('data-block-id', b.id);
+  div.style.background = b.color || '#1a2744';
+  div.style.height = `${(b.duration||1)*28 - 3}px`;
+  div.style.zIndex = 2;
+  const courseName = b.courseId ? (courses.find(c=>c.id==b.courseId)?.course_code || '') : '';
+  div.innerHTML = `<div class="cb-title">${b.text||''}</div>${courseName?`<div class="cb-course">${courseName}</div>`:''}`;
+  div.onclick = (e) => { e.stopPropagation(); openBlockModal(b.day, b.slot, b); };
+  cell.appendChild(div);
+}
+
+function renderAssignmentInGrid(a) {
+  const cell = slotToCell(a.dayIndex, a.slot);
+  if (!cell) return;
+  const div = document.createElement('div');
+  div.className = 'cell-block';
+  div.style.background = a.color || '#3b82f6';
+  div.style.height = '25px';
+  div.style.opacity = '0.85';
+  div.style.zIndex = 1;
+  div.innerHTML = `<div class="cb-title">📌 ${a.name}</div>`;
+  div.onclick = (e) => { e.stopPropagation(); openEventModal(a.id); };
+  cell.appendChild(div);
+}
+
+// ── TID CARDS ────────────────────────────────────────────────────────────
+function buildTID(elId, wd, today, wk) {
+  const grid = document.getElementById(elId);
+  if (!grid) return;
+  grid.innerHTML = '';
+  for (let d = 0; d < 7; d++) {
+    const date = new Date(plannerWeekStart); date.setDate(date.getDate() + d);
+    const isToday = date.toDateString() === today.toDateString();
+    const tid = wd.tid[d] || { tasks: [], reflection: '' };
+    const color = isToday ? 'var(--navy)' : '#4a5568';
+    const dateStr = date.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+
+    const card = document.createElement('div');
+    card.className = 'tid-card';
+
+    // Header
+    const hdr = document.createElement('div');
+    hdr.className = 'tid-card-hdr';
+    hdr.style.background = color;
+    hdr.innerHTML = `<span>${DAYS[d]}</span><span class="tid-card-date">${dateStr}</span>`;
+    card.appendChild(hdr);
+
+    // Tasks
+    const tasksEl = document.createElement('div');
+    tasksEl.className = 'tid-tasks';
+    tasksEl.innerHTML = '<div class="tid-tasks-label">Tasks</div>';
+
+    const taskList = document.createElement('div');
+    taskList.id = `tid-tasks-${elId}-${d}`;
+    tid.tasks.forEach((t,ti) => {
+      taskList.appendChild(buildTaskRow(t, ti, d, elId, wk));
+    });
+    tasksEl.appendChild(taskList);
+
+    // Add row
+    const addRow = document.createElement('div');
+    addRow.className = 'tid-add-row';
+    addRow.innerHTML = `
+      <input class="tid-add-inp" id="tid-inp-${elId}-${d}" placeholder="Add task…" onkeydown="if(event.key==='Enter')addTIDTask('${elId}',${d},'${wk}')"/>
+      <select class="tid-priority-sel" id="tid-pri-${elId}-${d}">
+        <option value="A">A</option><option value="B" selected>B</option><option value="C">C</option>
+      </select>
+      <button class="tid-add-btn" onclick="addTIDTask('${elId}',${d},'${wk}')">+</button>`;
+    tasksEl.appendChild(addRow);
+    card.appendChild(tasksEl);
+
+    // Reflection
+    const refEl = document.createElement('div');
+    refEl.className = 'tid-reflection';
+    refEl.innerHTML = `<div class="tid-reflection-label">Reflection</div>
+      <textarea id="tid-ref-${elId}-${d}" placeholder="What went well? Where did I stray? How can I improve?" onchange="saveTIDReflection('${elId}',${d},'${wk}')">${tid.reflection||''}</textarea>`;
+    card.appendChild(refEl);
+
+    grid.appendChild(card);
+  }
+}
+
+function buildTaskRow(task, taskIndex, day, elId, wk) {
+  const row = document.createElement('div');
+  row.className = 'tid-task-row';
+  row.id = `tid-task-${elId}-${day}-${taskIndex}`;
+  row.innerHTML = `
+    <input type="checkbox" ${task.done?'checked':''} onchange="toggleTIDTask('${elId}',${day},${taskIndex},'${wk}')"/>
+    <span class="tid-priority ${task.priority}">${task.priority}</span>
+    <span class="tid-task-text${task.done?' done':''}" title="${task.text}">${task.text}</span>
+    <button onclick="deleteTIDTask('${elId}',${day},${taskIndex},'${wk}')" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:12px;padding:0 2px;flex-shrink:0" title="Remove">×</button>`;
+  return row;
+}
+
+function addTIDTask(elId, day, wk) {
+  const inp = document.getElementById(`tid-inp-${elId}-${day}`);
+  const pri = document.getElementById(`tid-pri-${elId}-${day}`);
+  if (!inp || !inp.value.trim()) return;
+  const wd = getWeekData(wk);
+  wd.tid[day].tasks.push({ text: inp.value.trim(), priority: pri.value, done: false });
+  inp.value = '';
+  savePlannerData();
+  syncTIDGrids(wk);
+}
+
+function toggleTIDTask(elId, day, taskIndex, wk) {
+  const wd = getWeekData(wk);
+  if (wd.tid[day].tasks[taskIndex]) wd.tid[day].tasks[taskIndex].done = !wd.tid[day].tasks[taskIndex].done;
+  savePlannerData();
+  syncTIDGrids(wk);
+}
+
+function deleteTIDTask(elId, day, taskIndex, wk) {
+  const wd = getWeekData(wk);
+  wd.tid[day].tasks.splice(taskIndex, 1);
+  savePlannerData();
+  syncTIDGrids(wk);
+}
+
+function saveTIDReflection(elId, day, wk) {
+  const ta = document.getElementById(`tid-ref-${elId}-${day}`);
+  if (!ta) return;
+  const wd = getWeekData(wk);
+  wd.tid[day].reflection = ta.value;
+  savePlannerData();
+  // Sync to other TID grid without full rebuild
+  const otherId = elId === 'tidGridBottom' ? 'tidGrid' : 'tidGridBottom';
+  const otherTa = document.getElementById(`tid-ref-${otherId}-${day}`);
+  if (otherTa && otherTa !== ta) otherTa.value = ta.value;
+}
+
+function syncTIDGrids(wk) {
+  const wd = getWeekData(wk);
+  const today = new Date(); today.setHours(0,0,0,0);
+  buildTID('tidGridBottom', wd, today, wk);
+  if (plannerView === 'tid') buildTID('tidGrid', wd, today, wk);
+}
+
+// ── BLOCK EDITOR ─────────────────────────────────────────────────────────
+function cellClick(day, slot) {
+  openBlockModal(day, slot, null);
+}
+
+function openBlockModal(day, slot, existingBlock) {
+  editingBlockId = existingBlock ? existingBlock.id : null;
+  document.getElementById('blockModalTitle').textContent = existingBlock ? 'Edit Block' : 'Add Time Block';
+  document.getElementById('bmDay').value = day;
+  document.getElementById('bmSlot').value = slot;
+  document.getElementById('bmText').value = existingBlock ? existingBlock.text : '';
+  document.getElementById('bmDuration').value = existingBlock ? existingBlock.duration : 2;
+  document.getElementById('bmColor').value = existingBlock ? existingBlock.color : '#1a2744';
+  document.getElementById('bmDeleteBtn').style.display = existingBlock ? 'block' : 'none';
+
+  // Populate course select
+  const sel = document.getElementById('bmCourse');
+  sel.innerHTML = '<option value="">— None —</option>';
+  courses.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.name;
+    if (existingBlock?.courseId == c.id) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Color presets
+  const presets = document.getElementById('bmColorPresets');
+  presets.innerHTML = '';
+  const presetColors = ['#1a2744','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316'];
+  presetColors.forEach(c => {
+    const btn = document.createElement('div');
+    btn.style.cssText = `width:20px;height:20px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent;transition:border-color 0.1s`;
+    btn.onclick = () => { document.getElementById('bmColor').value = c; presets.querySelectorAll('div').forEach(b=>b.style.borderColor='transparent'); btn.style.borderColor='var(--navy)'; };
+    if (c === (existingBlock?.color||'#1a2744')) btn.style.borderColor = 'var(--navy)';
+    presets.appendChild(btn);
+  });
+
+  document.getElementById('blockModalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('bmText').focus(), 50);
+}
+
+function closeBlockModal() { document.getElementById('blockModalOverlay').classList.remove('open'); editingBlockId = null; }
+function maybeCloseBlockModal(e) { if (e.target === document.getElementById('blockModalOverlay')) closeBlockModal(); }
+
+function saveBlock() {
+  const text = document.getElementById('bmText').value.trim();
+  if (!text) { document.getElementById('bmText').focus(); return; }
+  const day      = +document.getElementById('bmDay').value;
+  const slot     = +document.getElementById('bmSlot').value;
+  const duration = +document.getElementById('bmDuration').value;
+  const color    = document.getElementById('bmColor').value;
+  const courseId = document.getElementById('bmCourse').value;
+  const wk       = weekKey(plannerWeekStart);
+  const wd       = getWeekData(wk);
+
+  if (editingBlockId) {
+    const b = wd.blocks.find(x=>x.id===editingBlockId);
+    if (b) { b.text=text; b.duration=duration; b.color=color; b.courseId=courseId; b.day=day; b.slot=slot; }
+  } else {
+    wd.blocks.push({ id: Date.now()+'', day, slot, duration, text, color, courseId });
+  }
+  savePlannerData();
+  closeBlockModal();
+  const weekAssignments = getWeekAssignments();
+  buildGrid(wd, new Date(), weekAssignments);
+}
+
+function deleteBlock() {
+  if (!editingBlockId) return;
+  const wk = weekKey(plannerWeekStart);
+  const wd = getWeekData(wk);
+  wd.blocks = wd.blocks.filter(b=>b.id!==editingBlockId);
+  savePlannerData();
+  closeBlockModal();
+  const weekAssignments = getWeekAssignments();
+  buildGrid(wd, new Date(), weekAssignments);
+}
+
+
+// ── AI WEEKLY PLANNER ─────────────────────────────────────────────────────
+let aiPlanRunning = false;
+
+function aiPlanWeek() {
+  if (!anthropicKey) { alert('Connect to Canvas first to use AI planning.'); return; }
+  document.getElementById('aiPlanModal').classList.add('open');
+  document.getElementById('aiPlanStatus').style.display = 'none';
+}
+function closeAIPlanModal() { document.getElementById('aiPlanModal').classList.remove('open'); }
+
+async function runAIPlan() {
+  if (aiPlanRunning) return;
+  aiPlanRunning = true;
+  const btn = document.getElementById('aiPlanGo');
+  const status = document.getElementById('aiPlanStatus');
+  const userPrompt = document.getElementById('aiPlanPrompt').value.trim();
+  const replace = document.getElementById('aiPlanReplace').checked;
+
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style="animation:spin 1s linear infinite"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zm0 2a4 4 0 010 8 4 4 0 010-8z" opacity=".3"/><path d="M14 8a6 6 0 01-6 6v-2a4 4 0 000-8V2a6 6 0 016 6z"/></svg> Generating…';
+  status.style.display = 'block';
+  status.textContent = '⏳ Reading your Canvas assignments…';
+
+  // Build context
+  const wk = weekKey(plannerWeekStart);
+  const weekEnd = new Date(plannerWeekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+  const weekStr = `${plannerWeekStart.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})} to ${weekEnd.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}`;
+
+  // Get assignments for this week and next 2 weeks (context)
+  const relevant = allAssignments
+    .filter(a => a.due_at)
+    .sort((a,b) => new Date(a.due_at) - new Date(b.due_at))
+    .slice(0, 40)
+    .map(a => {
+      const d = new Date(a.due_at);
+      return `- "${a.name}" | Course: ${a.course_name} | Due: ${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})} | Points: ${a.points_possible||'N/A'} | ${a.submission?.submitted_at ? 'SUBMITTED' : a.submission?.missing ? 'MISSING' : 'Not submitted'}`;
+    }).join('\n');
+
+  const courseList = courses.map(c => `- ${c.name} (${c.course_code||''})`).join('\n');
+
+  const systemPrompt = `You are an expert academic planner. You create detailed, realistic weekly study schedules for college students based on their Canvas assignments and personal preferences.
+
+You must respond ONLY with a valid JSON object — no markdown, no explanation, just JSON.
+
+The student's week runs: ${weekStr}
+Days are indexed 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday.
+Time slots are indexed from slot 0 = 6:00 AM, incrementing by 30 minutes. Slot 6 = 9:00 AM, slot 12 = noon, slot 18 = 3 PM, slot 24 = 6 PM, slot 30 = 9 PM. Max slot is 33 (11:30 PM).
+
+Courses:
+${courseList}
+
+Upcoming assignments (sorted by due date):
+${relevant || 'No assignments found.'}
+
+Return this exact JSON format:
+{
+  "summary": "2-3 sentence plain text overview of the plan you created",
+  "blocks": [
+    {
+      "day": 1,
+      "slot": 6,
+      "duration": 2,
+      "text": "Study Chapter 4 — Biology",
+      "color": "#3b82f6",
+      "courseId": null
+    }
+  ],
+  "tid": {
+    "0": { "tasks": [{"text": "Rest and prepare for the week", "priority": "B"}], "reflection": "" },
+    "1": { "tasks": [{"text": "Review lecture notes", "priority": "A"}], "reflection": "" },
+    "2": { "tasks": [], "reflection": "" },
+    "3": { "tasks": [], "reflection": "" },
+    "4": { "tasks": [], "reflection": "" },
+    "5": { "tasks": [], "reflection": "" },
+    "6": { "tasks": [], "reflection": "" }
+  },
+  "hours": { "sleep": 56, "class": 15, "study": 20, "work": 0 }
+}
+
+RULES:
+- blocks: 3-5 hours of study blocks per weekday, less on weekends. Space them out realistically. Include breaks.
+- Prioritize assignments due soonest with A priority TID tasks.
+- Block colors: use course-appropriate colors. Use blue (#3b82f6) for studying, green (#10b981) for assignments/submissions, amber (#f59e0b) for reviews, purple (#8b5cf6) for reading.
+- tid tasks: Each day should have 2-5 tasks. Use A for due assignments, B for study/review, C for optional prep.
+- tid tasks should reference specific assignment names when relevant.
+- hours: suggest realistic study hours based on the assignment load.
+- Do NOT schedule blocks before 7:00 AM (slot 2) or after 10:30 PM (slot 33).
+- Respect any student preferences in the user message.
+- courseId should always be null (we don't have the IDs in this context).`;
+
+  const userMsg = userPrompt 
+    ? `Plan my week. My preferences: ${userPrompt}` 
+    : 'Plan my week based on my assignments and a typical college schedule.';
+
+  try {
+    status.textContent = '🧠 Claude is building your schedule…';
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 4000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+
+    if (!res.ok) {
+      const e = await res.json().catch(()=>({error:{message:res.statusText}}));
+      throw new Error(e.error?.message || res.statusText);
+    }
+
+    const data = await res.json();
+    const rawText = data.content?.[0]?.text || '{}';
+
+    status.textContent = '📋 Applying your schedule…';
+
+    // Parse JSON robustly
+    let plan;
+    try {
+      const cleaned = rawText.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+      const start = cleaned.indexOf('{'); const end = cleaned.lastIndexOf('}');
+      plan = JSON.parse(cleaned.slice(start, end+1));
+    } catch(e) {
+      throw new Error('Could not parse AI response. Try again.');
+    }
+
+    // Apply to planner
+    const wd = getWeekData(wk);
+    if (replace) wd.blocks = [];
+
+    // Add blocks
+    (plan.blocks || []).forEach(b => {
+      if (b.day < 0 || b.day > 6) return;
+      if (b.slot < 0 || b.slot > 33) return;
+      wd.blocks.push({
+        id: Date.now() + '-' + Math.random(),
+        day: b.day, slot: b.slot,
+        duration: Math.max(1, Math.min(8, b.duration || 2)),
+        text: b.text || 'Study block',
+        color: b.color || '#3b82f6',
+        courseId: b.courseId || null
+      });
+    });
+
+    // Apply TID tasks
+    if (plan.tid) {
+      for (let d = 0; d < 7; d++) {
+        const dayPlan = plan.tid[String(d)];
+        if (!dayPlan) continue;
+        if (!wd.tid[d]) wd.tid[d] = { tasks: [], reflection: '' };
+        if (replace) wd.tid[d].tasks = [];
+        (dayPlan.tasks || []).forEach(t => {
+          wd.tid[d].tasks.push({ text: t.text, priority: t.priority || 'B', done: false });
+        });
+        if (dayPlan.reflection) wd.tid[d].reflection = dayPlan.reflection;
+      }
+    }
+
+    // Apply hours
+    if (plan.hours) {
+      wd.hours = plan.hours;
+      document.getElementById('hrsSleep').value = plan.hours.sleep ?? 56;
+      document.getElementById('hrsClass').value = plan.hours.class ?? 15;
+      document.getElementById('hrsStudy').value = plan.hours.study ?? 20;
+      document.getElementById('hrsWork').value  = plan.hours.work ?? 0;
+      calcHours();
+    }
+
+    savePlannerData();
+    renderPlanner();
+
+    status.style.background = '#ecfdf5';
+    status.style.color = '#059669';
+    status.textContent = '✓ Schedule created! ' + (plan.summary || '');
+
+    btn.disabled = false;
+    btn.innerHTML = '✓ Done — Close';
+    btn.onclick = closeAIPlanModal;
+
+  } catch(e) {
+    status.style.background = '#fef2f2';
+    status.style.color = '#dc2626';
+    status.textContent = '✗ Error: ' + e.message;
+    btn.disabled = false;
+    btn.innerHTML = 'Try Again';
+    btn.onclick = runAIPlan;
+  }
+
+  aiPlanRunning = false;
+}
+
+</script>
+
+<!-- AI PLANNER MODAL -->
+<div class="modal-overlay" id="aiPlanModal" onclick="if(event.target===this&&!aiPlanRunning)closeAIPlanModal()">
+  <div class="modal" style="max-width:500px">
+    <button class="modal-close" onclick="if(!aiPlanRunning)closeAIPlanModal()">×</button>
+    <div class="modal-title">✨ AI Weekly Planner</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.6">Tell Claude how you want your week structured. It will read your Canvas assignments and build a study schedule with time blocks and TID task cards.</div>
+    <div class="field" style="margin-bottom:0.75rem">
+      <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase">Your preferences / instructions</label>
+      <textarea id="aiPlanPrompt" rows="4" style="width:100%;padding:9px 11px;border:0.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--text);background:var(--soft);outline:none;resize:vertical;line-height:1.5" placeholder="e.g. I prefer studying in the mornings. Don't schedule anything before 9am. Leave Friday evenings free. Prioritize the assignments due soonest. Add review sessions after each class."></textarea>
+    </div>
+    <div class="field" style="margin-bottom:1rem">
+      <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase">Replace existing blocks?</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer">
+        <input type="checkbox" id="aiPlanReplace" checked style="accent-color:var(--navy)"/>
+        Clear current week's blocks before adding AI schedule
+      </label>
+    </div>
+    <div id="aiPlanStatus" style="display:none;font-size:12px;color:var(--muted);padding:8px 10px;background:var(--soft);border-radius:6px;margin-bottom:1rem;line-height:1.6"></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="if(!aiPlanRunning)closeAIPlanModal()" style="flex:1;padding:10px;border-radius:8px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer">Cancel</button>
+      <button id="aiPlanGo" onclick="runAIPlan()" style="flex:2;padding:10px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.5 7.5l-5 3V5.5l5 3z"/></svg>
+        Generate My Schedule
+      </button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

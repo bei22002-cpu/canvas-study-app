@@ -1,0 +1,53 @@
+#canvas-study-host {
+  position: fixed;
+  z-index: 2147483646;
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+}
+#canvas-study-fab {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2147483647;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: #1a2744;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+#canvas-study-fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+#canvas-study-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(920px, 96vw);
+  height: 100vh;
+  max-height: 100vh;
+  z-index: 2147483646;
+  border: none;
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.2);
+  display: none;
+  background: #f7f5f0;
+}
+#canvas-study-panel.open {
+  display: block;
+}
+#canvas-study-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483645;
+  background: rgba(0, 0, 0, 0.35);
+  display: none;
+}
+#canvas-study-backdrop.open {
+  display: block;
+}

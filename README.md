@@ -35,9 +35,13 @@ Health check: `http://127.0.0.1:3001/proxy-health`
 - Tokens and keys are stored in **browser localStorage** only when you choose “Remember me”.
 - Do **not** commit API keys or Canvas tokens to this repository.
 
-## Browser extension
+## Browser extension (recommended on Canvas)
 
-A Chrome/Edge extension (in-app panel on Canvas) is in progress on the `extension` branch / `extension/` folder when available.
+Install from the [`extension/`](extension/) folder — **Load unpacked** in Chrome/Edge. A **Study** button appears on Canvas pages; no local proxy needed.
+
+See [extension/README.md](extension/README.md) for setup steps.
+
+**Repository:** https://github.com/bei22002-cpu/canvas-study-app
 
 ## License
 
