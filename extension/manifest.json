@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Canvas Study",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "AI assistant, materials viewer, library, and study tutor inside Canvas.",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "tabs"],
   "host_permissions": ["https://*/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'"
+  },
   "background": {
     "service_worker": "background.js"
   },
@@ -26,7 +29,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["panel.html", "panel-boot.js"],
+      "resources": ["panel.html", "panel-boot.js", "panel-bind.js", "panel-app.js", "lib/purify.min.js"],
       "matches": ["https://*/*"]
     }
   ],

@@ -20,9 +20,19 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 import json
 import os
+import socket
+import sys
 
 LISTEN_HOST = os.environ.get("CANVAS_PROXY_HOST", "127.0.0.1")
 LISTEN_PORT = int(os.environ.get("CANVAS_PROXY_PORT", "3001"))
+
+
+class ReuseHTTPServer(HTTPServer):
+    allow_reuse_address = True
+
+    def server_bind(self):
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        super().server_bind()
 
 
 class ProxyHandler(BaseHTTPRequestHandler):
@@ -112,15 +122,28 @@ class ProxyHandler(BaseHTTPRequestHandler):
             return self.send_json(502, {"error": err, "target": target})
 
 
+def port_in_use(host, port):
+    try:
+        with socket.create_connection((host, port), timeout=0.5):
+            return True
+    except OSError:
+        return False
+
+
 if __name__ == "__main__":
     addr = (LISTEN_HOST, LISTEN_PORT)
-    httpd = HTTPServer(addr, ProxyHandler)
+    if port_in_use(LISTEN_HOST, LISTEN_PORT):
+        print("\n  ERROR: Port %s is already in use on %s." % (LISTEN_PORT, LISTEN_HOST))
+        print("  Close other canvas-proxy.py windows or run:")
+        print("    set CANVAS_PROXY_PORT=3002 && python canvas-proxy.py\n")
+        sys.exit(1)
+    httpd = ReuseHTTPServer(addr, ProxyHandler)
     base = "http://%s:%s" % (LISTEN_HOST, LISTEN_PORT)
-    print("\n  Canvas proxy at %s" % base)
-    print("  Health check: %s/proxy-health" % base)
-    print("  Open canvas-app.html (file or http://127.0.0.1:8080/ if you run http.server).")
-    print("  Ctrl+C to stop.\n")
+    print("\n  Canvas proxy at %s" % base, flush=True)
+    print("  Health check: %s/proxy-health" % base, flush=True)
+    print("  Open canvas-app.html (or http://127.0.0.1:8080/canvas-app.html with http.server).", flush=True)
+    print("  Ctrl+C to stop.\n", flush=True)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\n  Stopped.")
+        print("\n  Stopped.", flush=True)

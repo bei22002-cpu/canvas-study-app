@@ -1,804 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Canvas Study App</title>
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#1a2744;--cream:#f7f5f0;--surface:#fff;--soft:#f0ede6;--border:#e2ddd6;--border2:#d0cac0;--text:#1a2744;--muted:#6b7280;--muted2:#9ca3af;--rust:#e53e3e;--gold:#d4a017;--green:#059669}
-body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--cream);min-height:100vh;display:flex;flex-direction:column}
-/* HEADER */
-.app-header{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;height:54px;flex-shrink:0}
-.app-logo{display:flex;align-items:center;gap:10px;margin-right:2rem}
-.logo-mark{width:30px;height:30px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Lora',serif;font-weight:500;color:var(--navy);font-size:13px}
-.logo-text{color:#fff;font-size:15px;font-weight:500}
-.nav-tabs{display:flex;height:54px}
-.nav-tab{padding:0 1.1rem;color:rgba(255,255,255,0.5);font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all 0.15s;display:flex;align-items:center;gap:6px}
-.nav-tab:hover{color:rgba(255,255,255,0.85)}
-.nav-tab.active{color:#fff;border-bottom-color:var(--gold)}
-.header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.status-dot{width:8px;height:8px;border-radius:50%;background:#10b981}
-.status-dot.loading{background:var(--gold);animation:pulse 1s infinite}
-.status-dot.off{background:var(--muted2)}
-.user-chip{font-size:12px;color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.08);padding:4px 10px;border-radius:100px;cursor:pointer;border:none;transition:all 0.15s}
-.user-chip:hover{background:rgba(255,255,255,0.15);color:#fff}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-/* PAGES */
-.page{display:none;flex:1;flex-direction:column;overflow:hidden}
-.page.active{display:flex}
-/* SETUP */
-.setup-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}
-.setup-card{background:var(--surface);border:0.5px solid var(--border);border-radius:16px;padding:2rem;width:100%;max-width:460px}
-.setup-h{font-family:'Lora',serif;font-size:21px;font-weight:400;color:var(--navy);margin-bottom:0.4rem}
-.setup-sub{font-size:13px;color:var(--muted);margin-bottom:1.25rem;line-height:1.6}
-.notice{background:#fffbeb;border:0.5px solid #f59e0b;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400e;margin-bottom:1.25rem;line-height:1.6}
-.notice code{font-family:monospace;background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:4px}
-.field{margin-bottom:0.9rem}
-.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase}
-.field input{width:100%;padding:9px 11px;border:0.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);background:var(--soft);outline:none;transition:border-color 0.15s}
-.field input:focus{border-color:var(--navy);background:#fff}
-.field .hint{font-size:11px;color:var(--muted);margin-top:3px}
-.field .hint a{color:var(--navy)}
-.remember-row{display:flex;align-items:center;gap:8px;margin-bottom:1rem;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
-.remember-row input[type=checkbox]{width:auto;accent-color:var(--navy);cursor:pointer}
-.connect-btn{width:100%;padding:11px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:opacity 0.15s}
-.connect-btn:hover{opacity:0.88}
-.connect-btn:disabled{opacity:0.5;cursor:not-allowed}
-.err-msg{font-size:12px;color:var(--rust);margin-top:8px;padding:8px 10px;background:#fef2f2;border-radius:6px;display:none}
-.saved-badge{display:none;align-items:center;gap:6px;font-size:12px;color:var(--green);background:#ecfdf5;border:0.5px solid #a7f3d0;border-radius:6px;padding:6px 10px;margin-bottom:1rem}
-/* MAIN LAYOUT */
-.main-layout{display:flex;flex:1;overflow:hidden;min-height:0}
-.sidebar{width:200px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
-.sidebar-section{padding:0.9rem 1rem 0.4rem;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase}
-.course-item{padding:7px 1rem;font-size:13px;color:var(--navy);cursor:pointer;border-left:3px solid transparent;transition:background 0.1s;display:flex;align-items:center;gap:8px}
-.course-item:hover{background:var(--soft)}
-.course-item.active{background:var(--soft);font-weight:500}
-.course-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.cname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
-.ccode{font-size:10px;color:var(--muted);margin-top:1px}
-.content-area{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
-/* CHAT */
-.chat-banner{padding:0.65rem 1.25rem;background:var(--soft);border-bottom:0.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
-.bname{font-size:14px;font-weight:500;color:var(--navy)}
-.bcode{font-size:11px;color:var(--muted)}
-.tool-badges{display:flex;gap:6px}
-.badge{font-size:10px;padding:2px 8px;border-radius:100px;font-weight:500}
-.badge.canvas{background:#e8f0fe;color:#1a56db}
-.badge.web{background:#e8faf0;color:#0f766e}
-.messages{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem}
-.msg{max-width:88%;display:flex;flex-direction:column;gap:4px}
-.msg.user{align-self:flex-end;align-items:flex-end}
-.msg.ai{align-self:flex-start;align-items:flex-start}
-.bubble{padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
-.msg.user .bubble{background:var(--navy);color:#fff;border-bottom-right-radius:3px}
-.msg.ai .bubble{background:var(--surface);border:0.5px solid var(--border);color:var(--text);border-bottom-left-radius:3px}
-.tool-pill{font-size:11px;padding:3px 10px;border-radius:100px;border:0.5px solid;display:inline-block;margin:1px 0}
-.tool-pill.canvas-tool{color:#1a56db;background:#e8f0fe;border-color:#c3d7fe}
-.tool-pill.web-tool{color:#0f766e;background:#e8faf0;border-color:#a7f3d0}
-.typing{display:flex;gap:4px;align-items:center;padding:12px 14px}
-.typing span{width:5px;height:5px;background:var(--muted);border-radius:50%;animation:bounce 1.2s infinite}
-.typing span:nth-child(2){animation-delay:0.2s}
-.typing span:nth-child(3){animation-delay:0.4s}
-@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
-.input-bar{padding:0.75rem 1rem;border-top:0.5px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:var(--surface)}
-.input-bar textarea{flex:1;border:0.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);background:var(--soft);resize:none;outline:none;height:40px;max-height:120px;line-height:1.5;transition:border-color 0.15s}
-.input-bar textarea:focus{border-color:var(--navy);background:#fff}
-.send-btn{width:40px;height:40px;border-radius:8px;border:none;background:var(--navy);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity 0.15s}
-.send-btn:hover{opacity:0.85}
-.send-btn:disabled{opacity:0.4;cursor:not-allowed}
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:0.9rem;color:var(--muted);text-align:center;padding:2rem}
-.empty-icon{font-size:30px}
-.empty-state p{font-size:13px;max-width:280px;line-height:1.6}
-.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-.chip{padding:5px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:100px;font-size:12px;color:var(--navy);cursor:pointer;transition:background 0.1s}
-.chip:hover{background:var(--soft)}
-.info-bar{background:var(--navy);color:rgba(255,255,255,0.6);font-size:11px;padding:5px 1.25rem;flex-shrink:0}
-.info-bar span{color:#fff;font-weight:500}
-/* CALENDAR */
-.cal-page{display:flex;flex:1;overflow:hidden;min-height:0}
-.cal-sidebar{width:200px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;padding:1rem}
-.cal-sidebar-title{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.75rem}
-.cal-course-row{display:flex;align-items:center;gap:7px;margin-bottom:0.5rem;font-size:12px;color:var(--navy);overflow:hidden}
-.cal-course-row input[type=checkbox]{accent-color:var(--navy);cursor:pointer;flex-shrink:0}
-.color-swatch{width:14px;height:14px;border-radius:50%;flex-shrink:0;position:relative;border:2px solid rgba(0,0,0,0.1);cursor:pointer}
-.color-swatch input[type=color]{position:absolute;opacity:0;inset:0;cursor:pointer;padding:0;border:none;width:100%;height:100%}
-.cal-course-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;flex:1}
-.cal-export-section{margin-top:auto;padding-top:1rem;border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:7px}
-.export-btn{padding:8px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.15s;text-align:left;width:100%}
-.export-btn:hover{background:var(--border2)}
-.cal-main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.cal-header{padding:0.9rem 1.25rem;background:var(--surface);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:1rem;flex-shrink:0}
-.cal-nav{display:flex;align-items:center;gap:8px}
-.cal-nav button{width:28px;height:28px;border-radius:6px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background 0.1s}
-.cal-nav button:hover{background:var(--border)}
-.cal-month-label{font-size:15px;font-weight:600;color:var(--navy);min-width:155px;text-align:center}
-.cal-view-toggle{display:flex;border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
-.cal-view-btn{padding:5px 12px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:var(--soft);color:var(--muted);transition:all 0.1s}
-.cal-view-btn.active{background:var(--navy);color:#fff}
-.cal-today-btn{padding:5px 12px;border:0.5px solid var(--border);border-radius:6px;background:var(--soft);color:var(--navy);font-size:12px;font-weight:500;cursor:pointer;transition:background 0.1s}
-.cal-today-btn:hover{background:var(--border)}
-.cal-grid-wrap{flex:1;overflow-y:auto;padding:1rem 1.25rem}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border:0.5px solid var(--border);border-radius:10px;overflow:hidden}
-.cal-day-hdr{background:var(--soft);padding:8px 4px;text-align:center;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;border-bottom:0.5px solid var(--border);border-right:0.5px solid var(--border)}
-.cal-day-hdr:last-child{border-right:none}
-.cal-day{min-height:90px;padding:5px;border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);background:var(--surface)}
-.cal-day:nth-child(7n){border-right:none}
-.cal-day.other-month{background:var(--soft);opacity:0.65}
-.cal-day.today .day-num{background:var(--navy);color:#fff;border-radius:50%}
-.day-num{font-size:11px;font-weight:500;color:var(--navy);margin-bottom:3px;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
-.day-event{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;cursor:pointer;line-height:1.4}
-.day-event:hover{opacity:0.82}
-.day-more{font-size:9px;color:var(--muted);padding:1px 3px;cursor:pointer}
-.day-more:hover{color:var(--navy)}
-/* LIST VIEW */
-.cal-list{display:flex;flex-direction:column}
-.list-date-hdr{padding:7px 0.9rem;background:var(--soft);font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;position:sticky;top:0;border-bottom:0.5px solid var(--border)}
-.list-event-row{padding:9px 0.9rem;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background 0.1s}
-.list-event-row:hover{background:var(--soft)}
-.list-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.list-info{flex:1;min-width:0}
-.list-name{font-size:13px;color:var(--navy);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.list-course{font-size:11px;color:var(--muted);margin-top:1px}
-.list-time{font-size:11px;color:var(--muted);flex-shrink:0}
-.list-pts{font-size:11px;background:var(--soft);color:var(--navy);padding:2px 7px;border-radius:100px;flex-shrink:0;border:0.5px solid var(--border)}
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.28);z-index:100;display:none;align-items:center;justify-content:center}
-.modal-overlay.open{display:flex}
-.modal{background:var(--surface);border-radius:14px;padding:1.5rem;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.15);margin:1rem;position:relative}
-.modal-title{font-size:16px;font-weight:600;color:var(--navy);margin-bottom:0.3rem;padding-right:2rem}
-.modal-course-line{font-size:12px;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:6px}
-.modal-body{font-size:13px;color:var(--text);line-height:1.7;margin-bottom:1.25rem}
-.modal-body .row{margin-bottom:0.3rem}
-.modal-body strong{color:var(--navy)}
-.modal-actions{display:flex;gap:8px;flex-wrap:wrap}
-.modal-btn{padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.1s;text-decoration:none}
-.modal-btn:hover{background:var(--border)}
-.modal-btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
-.modal-btn.primary:hover{opacity:0.88}
-.modal-close{position:absolute;top:1rem;right:1rem;width:26px;height:26px;border-radius:50%;border:none;background:var(--soft);color:var(--muted);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
-.modal-close:hover{background:var(--border)}
-/* SETTINGS */
-.settings-wrap{flex:1;overflow-y:auto;padding:2rem;display:flex;flex-direction:column;align-items:center}
-.settings-card{background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.5rem;width:100%;max-width:480px;margin-bottom:1rem}
-.settings-card h3{font-size:15px;font-weight:600;color:var(--navy);margin-bottom:0.2rem}
-.settings-card p{font-size:12px;color:var(--muted);margin-bottom:1rem;line-height:1.6}
-.settings-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)}
-.settings-row:last-child{border-bottom:none}
-.settings-row label{font-size:13px;color:var(--navy)}
-.settings-row small{font-size:11px;color:var(--muted);display:block}
-.danger-btn{padding:7px 13px;border-radius:7px;border:0.5px solid var(--rust);color:var(--rust);background:transparent;font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer;transition:background 0.15s}
-.danger-btn:hover{background:#fef2f2}
-.color-settings-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border)}
-.color-settings-row:last-child{border-bottom:none}
-.color-settings-row label{font-size:13px;color:var(--navy);display:flex;align-items:center;gap:8px}
-
-/* ── PLANNER ── */
-.planner-wrap{display:flex;flex:1;flex-direction:column;overflow:hidden;min-height:0}
-.planner-toolbar{padding:0.75rem 1.25rem;background:var(--surface);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:1rem;flex-shrink:0;flex-wrap:wrap}
-.planner-nav{display:flex;align-items:center;gap:8px}
-.planner-nav button{width:28px;height:28px;border-radius:6px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background 0.1s}
-.planner-nav button:hover{background:var(--border)}
-.planner-week-label{font-size:14px;font-weight:600;color:var(--navy);min-width:200px;text-align:center}
-.planner-this-week{padding:5px 12px;border:0.5px solid var(--border);border-radius:6px;background:var(--soft);color:var(--navy);font-size:12px;font-weight:500;cursor:pointer;transition:background 0.1s}
-.planner-this-week:hover{background:var(--border)}
-.planner-view-toggle{display:flex;border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
-.planner-view-btn{padding:5px 12px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:var(--soft);color:var(--muted);transition:all 0.1s}
-.planner-view-btn.active{background:var(--navy);color:#fff}
-.planner-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0}
-
-/* GRID */
-.grid-section{flex-shrink:0;padding:0 1.25rem 1rem}
-.grid-outer{overflow-x:auto}
-.planner-grid{display:grid;grid-template-columns:52px repeat(7,1fr);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;min-width:600px}
-.grid-corner{background:var(--soft);border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);padding:6px 4px;display:flex;align-items:center;justify-content:center}
-.grid-day-hdr{background:var(--soft);border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);padding:6px 4px;text-align:center}
-.grid-day-hdr:last-child{border-right:none}
-.grid-day-name{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase}
-.grid-day-date{font-size:13px;font-weight:600;color:var(--navy);margin-top:1px}
-.grid-day-hdr.today-col .grid-day-date{background:var(--navy);color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin:2px auto 0}
-.time-label{background:var(--soft);border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);padding:0 4px;display:flex;align-items:flex-start;justify-content:flex-end;padding-top:2px}
-.time-label span{font-size:9px;color:var(--muted);white-space:nowrap;letter-spacing:0.03em}
-.time-label.hour-mark{background:#faf8f4}
-.grid-cell{border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);min-height:28px;position:relative;cursor:pointer;transition:background 0.08s}
-.grid-cell:nth-child(7n+1){border-right:none}
-.grid-cell:hover{background:rgba(26,39,68,0.04)}
-.grid-cell.hour-mark{border-bottom-color:var(--border2)}
-.grid-cell.today-col{background:rgba(26,39,68,0.02)}
-.cell-block{position:absolute;inset:1px 2px;border-radius:4px;padding:2px 4px;font-size:10px;color:#fff;overflow:hidden;cursor:pointer;z-index:2;line-height:1.3}
-.cell-block:hover{opacity:0.88;z-index:3}
-.cell-block .cb-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cell-block .cb-course{font-size:9px;opacity:0.85}
-
-/* HOURS CALCULATOR */
-.hours-calc{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;margin:0 1.25rem 1rem;padding:1rem}
-.hours-calc-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.75rem}
-.hours-row{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;font-size:13px;color:var(--navy)}
-.hours-row input{width:52px;padding:4px 6px;border:0.5px solid var(--border);border-radius:6px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--navy);background:var(--soft);text-align:center;outline:none}
-.hours-row input:focus{border-color:var(--navy);background:#fff}
-.hours-result{font-weight:600;color:var(--green);margin-left:0.25rem}
-.hours-result.low{color:var(--rust)}
-
-/* TID SECTION */
-.tid-section{padding:0 1.25rem 1.5rem;flex-shrink:0}
-.tid-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.75rem}
-.tid-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;min-width:600px}
-.tid-card{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
-.tid-card-hdr{padding:6px 8px;font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;justify-content:space-between}
-.tid-card-date{font-size:9px;opacity:0.85;font-weight:400}
-.tid-tasks{padding:6px 8px;flex:1}
-.tid-tasks-label{font-size:9px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px}
-.tid-task-row{display:flex;align-items:center;gap:4px;margin-bottom:3px}
-.tid-task-row input[type=checkbox]{accent-color:var(--navy);cursor:pointer;flex-shrink:0}
-.tid-task-text{flex:1;font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
-.tid-task-text.done{text-decoration:line-through;color:var(--muted2)}
-.tid-priority{font-size:9px;font-weight:700;width:14px;text-align:center;flex-shrink:0;border-radius:3px;padding:1px 0}
-.tid-priority.A{background:#fee2e2;color:#dc2626}
-.tid-priority.B{background:#fef3c7;color:#d97706}
-.tid-priority.C{background:#d1fae5;color:#059669}
-.tid-add-row{display:flex;gap:4px;margin-top:4px}
-.tid-add-inp{flex:1;padding:3px 6px;border:0.5px solid var(--border);border-radius:5px;font-family:'Outfit',sans-serif;font-size:11px;color:var(--text);background:var(--soft);outline:none;min-width:0}
-.tid-add-inp:focus{border-color:var(--navy);background:#fff}
-.tid-priority-sel{padding:3px 4px;border:0.5px solid var(--border);border-radius:5px;font-family:'Outfit',sans-serif;font-size:11px;color:var(--text);background:var(--soft);outline:none;cursor:pointer}
-.tid-add-btn{width:22px;height:22px;border-radius:5px;border:none;background:var(--navy);color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.tid-reflection{padding:6px 8px;border-top:0.5px solid var(--border)}
-.tid-reflection-label{font-size:9px;font-weight:600;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px}
-.tid-reflection textarea{width:100%;resize:none;border:0.5px solid var(--border);border-radius:5px;padding:4px 6px;font-family:'Outfit',sans-serif;font-size:10px;color:var(--text);background:var(--soft);outline:none;line-height:1.4;height:52px}
-.tid-reflection textarea:focus{border-color:var(--navy);background:#fff}
-.tid-outer{overflow-x:auto}
-
-/* BLOCK EDITOR MODAL */
-.block-modal{background:var(--surface);border-radius:14px;padding:1.5rem;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.15);margin:1rem;position:relative}
-.block-modal h3{font-size:15px;font-weight:600;color:var(--navy);margin-bottom:1rem}
-.block-modal .field{margin-bottom:0.75rem}
-.block-modal .field label{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;display:block;letter-spacing:0.05em;text-transform:uppercase}
-.block-modal .field input,.block-modal .field select,.block-modal .field textarea{width:100%;padding:7px 10px;border:0.5px solid var(--border);border-radius:7px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--text);background:var(--soft);outline:none}
-.block-modal .field input:focus,.block-modal .field select:focus,.block-modal .field textarea:focus{border-color:var(--navy);background:#fff}
-.block-modal-actions{display:flex;gap:8px;margin-top:1rem}
-.bm-btn{flex:1;padding:8px;border-radius:7px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:background 0.1s}
-.bm-btn:hover{background:var(--border)}
-.bm-btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
-.bm-btn.primary:hover{opacity:0.88}
-.bm-btn.danger{color:var(--rust);border-color:var(--rust)}
-.bm-btn.danger:hover{background:#fef2f2}
-
-
-/* RENDERED CHAT MESSAGES */
-.bubble a{color:#60a5fa;text-decoration:underline}
-.msg.user .bubble a{color:#bfdbfe}
-.bubble.rendered{white-space:normal}
-.bubble.rendered p{margin-bottom:0.6rem;line-height:1.6}
-.bubble.rendered p:last-child{margin-bottom:0}
-.bubble.rendered strong,.bubble.rendered b{font-weight:600}
-.bubble.rendered em{font-style:italic}
-.bubble.rendered ul,.bubble.rendered ol{padding-left:1.25rem;margin-bottom:0.5rem}
-.bubble.rendered li{margin-bottom:0.25rem;line-height:1.5}
-.bubble.rendered h3{font-size:14px;font-weight:600;margin:0.5rem 0 0.3rem}
-.bubble.rendered .link-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:500;text-decoration:none;margin:2px 2px;border:0.5px solid;transition:opacity 0.1s}
-.bubble.rendered .link-btn:hover{opacity:0.82}
-.bubble.rendered .link-btn.submit{background:#ecfdf5;border-color:#a7f3d0;color:#059669}
-.bubble.rendered .link-btn.view{background:#e8f0fe;border-color:#c3d7fe;color:#1a56db}
-.bubble.rendered .link-btn.file{background:#fef3c7;border-color:#fcd34d;color:#d97706}
-.bubble.rendered .link-btn.page{background:#f3e8ff;border-color:#d8b4fe;color:#7c3aed}
-.bubble.rendered .assignment-card{border:0.5px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px;background:var(--soft)}
-.bubble.rendered .assignment-card .ac-title{font-weight:600;margin-bottom:2px;color:var(--navy)}
-.bubble.rendered .assignment-card .ac-meta{font-size:11px;color:var(--muted);margin-bottom:5px}
-.bubble.rendered .ac-links{display:flex;gap:5px;flex-wrap:wrap}
-.bubble.rendered code{font-family:monospace;background:rgba(0,0,0,0.06);padding:1px 4px;border-radius:4px;font-size:12px}
-
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-/* MATERIALS & LIBRARY & TUTOR */
-.mat-toolbar{padding:0.65rem 1rem;border-bottom:0.5px solid var(--border);display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface)}
-.mat-toolbar input[type=search]{flex:1;min-width:160px;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--soft)}
-.mat-filters{display:flex;flex-wrap:wrap;gap:6px}
-.mat-filter-btn{padding:5px 11px;border-radius:100px;border:0.5px solid var(--border);background:var(--soft);font-size:12px;cursor:pointer;color:var(--muted)}
-.mat-filter-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-.mat-split{display:flex;flex:1;min-height:0;overflow:hidden}
-.mat-grid{flex:1;overflow-y:auto;padding:1rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-content:start}
-.modules-panel{width:280px;flex-shrink:0;border-left:0.5px solid var(--border);overflow-y:auto;padding:0.75rem;background:var(--soft);display:none}
-.modules-panel.open{display:block}
-.mod-h{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin:0.5rem 0 0.25rem}
-.mod-block{border:0.5px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface);overflow:hidden}
-.mod-name{padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-.mod-items{display:none;padding:0 4px 6px 8px;font-size:11px}
-.mod-block.expanded .mod-items{display:block}
-.mod-item{padding:4px 0;cursor:pointer;color:var(--navy);border-bottom:0.5px solid var(--border)}
-.mod-item:last-child{border-bottom:none}
-.file-card,.mat-card{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:10px;cursor:pointer;transition:background 0.1s}
-.file-card:hover,.mat-card:hover{background:var(--soft)}
-.file-card-icon{font-size:22px;margin-bottom:4px}
-.file-card-name{font-size:12px;font-weight:600;color:var(--navy);line-height:1.3}
-.file-card-meta{font-size:10px;color:var(--muted);margin-top:3px}
-.file-empty{grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)}
-.content-viewer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:150;align-items:center;justify-content:center;overflow-y:auto;padding:12px}
-.content-viewer-overlay.open{display:flex}
-.content-viewer-panel{background:var(--surface);border-radius:14px;width:100%;max-width:880px;max-height:92vh;margin:auto;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.18);position:relative}
-.cv-head{padding:1rem 3rem 0.25rem 1rem;border-bottom:0.5px solid var(--border)}
-#fvTitle{font-size:16px;font-weight:600;color:var(--navy)}
-.cv-badge{font-size:10px;padding:2px 8px;border-radius:100px;background:var(--soft);color:var(--muted);margin-left:6px;vertical-align:middle}
-.cv-meta{font-size:11px;color:var(--muted);padding:0.5rem 1rem;line-height:1.5;border-bottom:0.5px solid var(--border)}
-.cv-body-scroll{flex:1;overflow-y:auto;padding:1rem;min-height:120px}
-.cv-body-scroll .file-content-view img{max-width:100%;height:auto}
-.cv-actions{display:flex;flex-wrap:wrap;gap:8px;padding:0.75rem 1rem;border-top:0.5px solid var(--border);background:var(--soft)}
-.god-banner{background:#7c3aed;color:#fff;font-size:12px;padding:6px 10px;border-radius:6px;margin-bottom:8px}
-.tutor-tools{display:flex;flex-wrap:wrap;gap:8px;padding:0.5rem 1rem;border-bottom:0.5px solid var(--border);background:var(--soft);font-size:12px;align-items:center}
-.tutor-pins{display:flex;flex-wrap:wrap;gap:4px;max-height:72px;overflow-y:auto;padding:6px 0}
-.tutor-pin{background:#eef2ff;border:0.5px solid #c7d2fe;border-radius:100px;padding:2px 8px;font-size:11px;display:flex;align-items:center;gap:4px}
-.tutor-pin button{border:none;background:none;cursor:pointer;color:var(--rust);padding:0 2px}
-.library-toolbar{padding:8px;border-bottom:0.5px solid var(--border);display:flex;flex-wrap:wrap;gap:8px}
-.small-btn{padding:5px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--soft);font-size:11px;cursor:pointer}
-</style>
-</head>
-<body>
-
-<div class="app-header">
-  <div class="app-logo">
-    <div class="logo-mark">Cv</div>
-    <span class="logo-text">Canvas Study</span>
-  </div>
-  <div class="nav-tabs">
-    <button class="nav-tab active" data-page="chatPage" onclick="showPage('chatPage',this)" id="tabChat">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h12a1 1 0 011 1v8a1 1 0 01-1 1H5l-3 3V3a1 1 0 011-1z"/></svg>
-      AI Assistant
-    </button>
-    <button class="nav-tab" data-page="calPage" onclick="showPage('calPage',this)" id="tabCal">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M5 1v1H2a1 1 0 00-1 1v11a1 1 0 001 1h12a1 1 0 001-1V3a1 1 0 00-1-1h-3V1h-1v1H6V1H5zm-3 4h12v8H2V5z"/></svg>
-      Calendar
-    </button>
-    <button class="nav-tab" data-page="filesPage" onclick="showPage('filesPage',this);initMaterialsPage()" id="tabMaterials">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2a2 2 0 012-2h5.586A2 2 0 0111 .586L13.414 3A2 2 0 0114 4.414V14a2 2 0 01-2 2H4a2 2 0 01-2-2V2zm7 0v3h3L9 2z"/></svg>
-      Materials
-    </button>
-    <button class="nav-tab" data-page="libraryPage" onclick="showPage('libraryPage',this);refreshLibraryList()" id="tabLibrary">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M4 1h8v2H4V1zM2 4h12v10a2 2 0 01-2 2H4a2 2 0 01-2-2V4zm3 2v8h6V6H5z"/></svg>
-      My Library
-    </button>
-    <button class="nav-tab" data-page="tutorPage" onclick="showPage('tutorPage',this)" id="tabTutor">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a5 5 0 00-3 9v3l3 1 3-1v-3a5 5 0 00-3-9z"/></svg>
-      Study Tutor
-    </button>
-    <button class="nav-tab" data-page="plannerPage" onclick="showPage('plannerPage',this);initPlanner()" id="tabPlanner">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1H2a1 1 0 01-1-1V2zm2 2v8h10V4H3zm1 1h2v2H4V5zm4 0h2v2H8V5zm-4 4h2v2H4V9zm4 0h2v2H8V9z"/></svg>
-      Weekly Planner
-    </button>
-    <button class="nav-tab" data-page="settingsPage" onclick="showPage('settingsPage',this)" id="tabSettings">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M7.5 1a6.5 6.5 0 100 13A6.5 6.5 0 007.5 1zm0 4a2.5 2.5 0 110 5 2.5 2.5 0 010-5z"/></svg>
-      Settings
-    </button>
-  </div>
-  <div class="header-right">
-    <div class="status-dot off" id="dot"></div>
-    <button class="user-chip" id="userChip" style="display:none" onclick="showPage('settingsPage',document.getElementById('tabSettings'))"></button>
-  </div>
-</div>
-
-<!-- SETUP -->
-<div class="page active" id="setupPage">
-  <div class="setup-wrap">
-    <div class="setup-card">
-      <div class="setup-h">Connect to Canvas</div>
-      <div class="setup-sub">Enter your credentials below. Check "Remember me" and you won't need to log in again on this device.</div>
-      <div class="notice">⚡ Keep <code>canvas-proxy.py</code> running: <code>python canvas-proxy.py</code> (<code>http://127.0.0.1:3001</code>). If the browser cannot reach it from <code>file://</code>, run <code>python -m http.server 8080 --bind 127.0.0.1</code> here and open <code>http://127.0.0.1:8080/canvas-app.html</code>.</div>
-      <div class="saved-badge" id="savedBadge">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="#059669"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.7 5.7l-4 4a.75.75 0 01-1.06 0l-2-2a.75.75 0 011.06-1.06l1.47 1.47 3.47-3.47a.75.75 0 011.06 1.06z"/></svg>
-        Saved credentials found — connecting…
-      </div>
-      <div class="field">
-        <label>Canvas Domain</label>
-        <input type="text" id="domain" placeholder="byui.instructure.com"/>
-        <div class="hint">Your school's Canvas URL without https://</div>
-      </div>
-      <div class="field">
-        <label>Canvas Access Token</label>
-        <input type="password" id="token" placeholder="Paste your Canvas API token"/>
-        <div class="hint">Account → Settings → New Access Token</div>
-      </div>
-      <div class="field">
-        <label>Anthropic API Key</label>
-        <input type="password" id="anthropicKey" placeholder="sk-ant-…"/>
-        <div class="hint">Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
-      </div>
-      <label class="remember-row">
-        <input type="checkbox" id="rememberMe" checked/>
-        Remember my credentials on this device
-      </label>
-      <button class="connect-btn" id="connectBtn" onclick="connect()">Connect to Canvas</button>
-      <div class="err-msg" id="errMsg"></div>
-    </div>
-  </div>
-</div>
-
-<!-- CHAT -->
-<div class="page" id="chatPage">
-  <div class="main-layout">
-    <div class="sidebar">
-      <div class="sidebar-section">Courses</div>
-      <div id="courseList"></div>
-    </div>
-    <div class="content-area">
-      <div class="chat-banner">
-        <div><div class="bname" id="bannerName">All Courses</div><div class="bcode" id="bannerCode">Ask anything about your courses</div></div>
-        <div class="tool-badges"><div class="badge canvas">Canvas Live</div><div class="badge web">Web</div></div>
-      </div>
-      <div class="messages" id="messages">
-        <div class="empty-state" id="emptyState">
-          <div class="empty-icon">🎓</div>
-          <p>Claude has live access to your Canvas account and the web. Ask about assignments, grades, submissions, or any course topic.</p>
-          <div class="chips">
-            <div class="chip" onclick="quickAsk('What assignments have I already submitted?')">Submitted work</div>
-            <div class="chip" onclick="quickAsk('What are my current grades?')">My grades</div>
-            <div class="chip" onclick="quickAsk('What is due in the next 7 days?')">Due this week</div>
-            <div class="chip" onclick="quickAsk('Any missing assignments?')">Missing work</div>
-            <div class="chip" onclick="quickAsk('What is saved in my Library — search summaries of my textbooks and snapshots.')">Saved Library</div>
-            <div class="chip" onclick="quickAsk('Show me all my assignments with links to submit them.')">Submit assignments</div>
-          </div>
-        </div>
-      </div>
-      <div class="input-bar">
-        <textarea id="chatInput" placeholder="Ask anything about your courses…" onkeydown="handleKey(event)"></textarea>
-        <button class="send-btn" id="sendBtn" onclick="send()">
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 8L14 2L8 14L7 9L2 8Z" fill="white" stroke="white" stroke-width="1" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
-      <div class="info-bar" id="infoBar" style="display:none"></div>
-    </div>
-  </div>
-</div>
-
-<!-- CALENDAR -->
-<div class="page" id="calPage">
-  <div class="cal-page">
-    <div class="cal-sidebar">
-      <div class="cal-sidebar-title">Courses</div>
-      <div id="calCourseFilters"></div>
-      <div class="cal-export-section">
-        <div class="cal-sidebar-title" style="margin-bottom:0.5rem">Export Calendar</div>
-        <button class="export-btn" onclick="exportICS('all')">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v9m-3-3l3 3 3-3M2 13h12"/></svg>
-          Download .ics — All
-        </button>
-        <button class="export-btn" onclick="exportICS('visible')">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v9m-3-3l3 3 3-3M2 13h12"/></svg>
-          Download .ics — Selected
-        </button>
-        <button class="export-btn" onclick="openGCalBulk()">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#4285f4" stroke-width="1.5"><rect x="1" y="2" width="14" height="13" rx="1"/><path d="M5 1v2m6-2v2M1 6h14"/></svg>
-          Open in Google Cal
-        </button>
-        <button class="export-btn" onclick="exportICS('apple')">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M11.182 2c.11.546-.07 1.1-.41 1.56-.34.45-.9.8-1.47.76-.1-.55.1-1.08.44-1.53.35-.46.93-.8 1.44-.79zm2.27 5.44c-.99.3-1.66 1.15-1.61 2.2.05.95.62 1.8 1.5 2.18-.2.6-.48 1.15-.82 1.62-.5.7-1.01 1.4-1.8 1.41-.77.01-1.01-.45-1.89-.45-.88 0-1.15.44-1.88.46-.77.02-1.35-.7-1.86-1.4C4.37 11.9 3.6 10 3.6 8.18c0-1.98.9-3.02 2.08-3.07.76-.03 1.48.5 1.94.5.47 0 1.35-.62 2.27-.53.39.02 1.48.16 2.18 1.2l-.65.16z"/></svg>
-          Apple Calendar (.ics)
-        </button>
-      </div>
-    </div>
-    <div class="cal-main">
-      <div class="cal-header">
-        <div class="cal-nav">
-          <button onclick="changeMonth(-1)">&#8592;</button>
-          <div class="cal-month-label" id="calMonthLabel"></div>
-          <button onclick="changeMonth(1)">&#8594;</button>
-        </div>
-        <button class="cal-today-btn" onclick="goToday()">Today</button>
-        <div class="cal-view-toggle">
-          <button class="cal-view-btn active" id="viewMonth" onclick="setView('month')">Month</button>
-          <button class="cal-view-btn" id="viewList" onclick="setView('list')">List</button>
-        </div>
-      </div>
-      <div class="cal-grid-wrap" id="calGridWrap">
-        <div style="padding:2rem;text-align:center;color:var(--muted);font-size:13px">Connect to Canvas to load your assignments.</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MATERIALS -->
-<div class="page" id="filesPage">
-  <div class="main-layout">
-    <div class="sidebar">
-      <div class="sidebar-section">Courses</div>
-      <div id="filesCourseList"></div>
-    </div>
-    <div class="content-area" style="min-height:0">
-      <div class="mat-toolbar">
-        <input type="search" id="filesSearch" placeholder="Search materials…" oninput="filterMaterials()" style="flex:1;min-width:140px;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--soft)"/>
-        <div class="mat-filters" id="matFilters">
-          <button type="button" class="mat-filter-btn active" data-mf="all" onclick="setMatFilter('all',this)">All</button>
-          <button type="button" class="mat-filter-btn" data-mf="assignment" onclick="setMatFilter('assignment',this)">Assignments</button>
-          <button type="button" class="mat-filter-btn" data-mf="quiz" onclick="setMatFilter('quiz',this)">Quizzes &amp; exams</button>
-          <button type="button" class="mat-filter-btn" data-mf="file" onclick="setMatFilter('file',this)">Files</button>
-          <button type="button" class="mat-filter-btn" data-mf="page" onclick="setMatFilter('page',this)">Pages</button>
-          <button type="button" class="mat-filter-btn" data-mf="modules" onclick="setMatFilter('modules',this)">Modules</button>
-        </div>
-      </div>
-      <div id="filesLoadingMsg" style="display:none;padding:1rem;text-align:center;color:var(--muted)">Loading…</div>
-      <div class="mat-split" style="flex:1;min-height:0">
-        <div id="filesGrid" class="mat-grid"></div>
-        <div id="modulesPanel" class="modules-panel"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MY LIBRARY -->
-<div class="page" id="libraryPage">
-  <div class="main-layout">
-    <div class="sidebar">
-      <div class="sidebar-section">Library</div>
-      <input type="search" id="libSearch" placeholder="Search saved…" oninput="refreshLibraryList()" style="margin:0 0.75rem 8px;width:calc(100% - 1.5rem);padding:6px 8px;border:0.5px solid var(--border);border-radius:6px;font-size:12px"/>
-      <select id="libCourseFilter" onchange="refreshLibraryList()" style="margin:0 0.75rem 8px;width:calc(100% - 1.5rem);padding:6px;font-size:12px;border-radius:6px;border:0.5px solid var(--border)">
-        <option value="">All courses</option>
-      </select>
-      <select id="libTypeFilter" onchange="refreshLibraryList()" style="margin:0 0.75rem 8px;width:calc(100% - 1.5rem);padding:6px;font-size:12px;border-radius:6px;border:0.5px solid var(--border)">
-        <option value="">All types</option>
-        <option value="assignment">Assignment</option>
-        <option value="quiz">Quiz</option>
-        <option value="page">Page</option>
-        <option value="file">File</option>
-        <option value="textbook">Textbook</option>
-        <option value="tutor_sources_bundle">Session bundle</option>
-        <option value="web_reference">Web</option>
-      </select>
-      <div class="sidebar-section" style="padding-top:8px">Actions</div>
-      <div style="padding:0 0.75rem;display:flex;flex-direction:column;gap:6px">
-        <button type="button" class="export-btn" onclick="exportLibraryJson()">Export JSON</button>
-        <label class="export-btn" style="cursor:pointer"><input type="file" accept="application/json" style="display:none" onchange="importLibraryJson(event)"/>Import JSON</label>
-        <button type="button" class="export-btn" onclick="showAddTextbookForm()">Add textbook / note</button>
-      </div>
-    </div>
-    <div class="content-area" style="min-height:0;display:flex;flex-direction:column">
-      <div class="library-toolbar">
-        <strong style="font-size:14px;color:var(--navy)">Saved materials</strong>
-        <span id="libStorageNote" style="font-size:11px;color:var(--muted);margin-left:auto"></span>
-      </div>
-      <div id="libraryGrid" class="mat-grid" style="flex:1"></div>
-      <div id="addTextbookBar" style="display:none;padding:1rem;border-top:0.5px solid var(--border);background:var(--surface)">
-        <div class="field"><label>Title</label><input type="text" id="tbTitle" placeholder="Chapter 3 — Organic chem"/></div>
-        <div class="field"><label>Course</label><select id="tbCourse"></select></div>
-        <div class="field"><label>URL (optional)</label><input type="text" id="tbUrl" placeholder="https://…"/></div>
-        <div class="field"><label>Notes</label><textarea id="tbNotes" rows="3" style="width:100%;padding:8px;border-radius:8px;border:0.5px solid var(--border);font-family:inherit"></textarea></div>
-        <button type="button" class="connect-btn" style="width:auto;padding:8px 16px" onclick="saveTextbookEntry()">Save to Library</button>
-        <button type="button" class="modal-btn" onclick="document.getElementById('addTextbookBar').style.display='none'">Cancel</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- STUDY TUTOR -->
-<div class="page" id="tutorPage">
-  <div class="main-layout">
-    <div class="sidebar" style="width:220px">
-      <div class="sidebar-section">Tutor scope</div>
-      <div style="padding:0 0.75rem 10px">
-        <label style="font-size:10px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px">Course focus</label>
-        <select id="tutorCourseFocus" style="width:100%;padding:6px;font-size:12px;border-radius:6px;border:0.5px solid var(--border)"></select>
-      </div>
-      <div style="padding:0 0.75rem;display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--muted)">
-        <label style="cursor:pointer;display:flex;align-items:center;gap:6px"><input type="checkbox" id="tutorPreferCourseOnly"/> Prefer course only (no web)</label>
-        <label style="cursor:pointer;display:flex;align-items:center;gap:6px"><input type="checkbox" id="tutorAutosaveSources"/> Auto-save tutor sources</label>
-        <label style="cursor:pointer;display:flex;align-items:center;gap:6px"><input type="checkbox" id="hideGodMode"/> Disable GOD mode prefix</label>
-      </div>
-      <div class="sidebar-section">Pin from Library</div>
-      <div id="tutorPinPicker" style="padding:0 0.75rem;font-size:11px;color:var(--muted);max-height:120px;overflow-y:auto"></div>
-      <div class="sidebar-section">Quick prompts</div>
-      <div style="padding:0 0.5rem;display:flex;flex-direction:column;gap:4px">
-        <button type="button" class="small-btn" onclick="tutorChip('Summarize key ideas from my pinned materials.')">Summarize pins</button>
-        <button type="button" class="small-btn" onclick="tutorChip('What does my syllabus say about grading and deadlines? Use course tools.')">Syllabus help</button>
-        <button type="button" class="small-btn" onclick="tutorChip('Walk me through the current assignment without giving me a final answer yet — then verify my understanding.')">Assignment walkthrough</button>
-      </div>
-    </div>
-    <div class="content-area">
-      <div class="chat-banner">
-        <div><div class="bname">Study Tutor</div><div class="bcode" id="tutorBannerSub">Canvas-first tutoring · Claude (Anthropic API)</div></div>
-        <div class="tool-badges"><div class="badge canvas">Course</div><div class="badge web">Web optional</div></div>
-      </div>
-      <div id="tutorGodBanner" class="god-banner" style="display:none;margin:0 1rem">GOD mode — tutoring safeguards skipped for this message.</div>
-      <div class="tutor-tools">
-        <span style="font-size:11px;color:var(--muted)">Pins:</span>
-        <div class="tutor-pins" id="tutorPinnedStrip"></div>
-        <button type="button" class="small-btn" style="margin-left:auto" onclick="clearTutorChat()">Clear chat</button>
-        <button type="button" class="small-btn" onclick="saveTutorSourcesBundle()" title="Save tool sources from last reply">Save sources</button>
-        <span id="tutorSourceLine" style="font-size:11px;color:var(--muted2);flex-basis:100%"></span>
-      </div>
-      <div class="messages" id="tutorMessages" style="flex:1"></div>
-      <div class="input-bar">
-        <textarea id="tutorInput" placeholder="Study question… Prefix GOD mode: to bypass safeguards if needed." onkeydown="handleTutorKey(event)"></textarea>
-        <button class="send-btn" id="tutorSendBtn" onclick="sendTutor()"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 8L14 2L8 14L7 9L2 8Z" fill="white"/></svg></button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- SETTINGS -->
-<div class="page" id="settingsPage">
-  <div class="settings-wrap">
-    <div class="settings-card">
-      <h3>Account</h3>
-      <p>Connected account and credential management.</p>
-      <div class="settings-row"><div><label id="settingsUser">Not connected</label><small>Student name</small></div></div>
-      <div class="settings-row"><div><label id="settingsDomain">—</label><small>Canvas domain</small></div></div>
-      <div class="settings-row">
-        <div><label>Saved credentials</label><small>Stored in browser localStorage on this device only</small></div>
-        <button class="danger-btn" onclick="clearSaved()">Clear &amp; log out</button>
-      </div>
-    </div>
-    <div class="settings-card">
-      <h3>Course Colors</h3>
-      <p>Click any color dot to customize — changes apply to the calendar immediately.</p>
-      <div id="colorSettings"><div style="font-size:13px;color:var(--muted)">Connect to Canvas to see courses.</div></div>
-    </div>
-    <div class="settings-card">
-      <h3>My Library storage</h3>
-      <p>Saved snapshots and textbooks live in <strong>IndexedDB</strong> in this browser — large assignments and PDF bookmarks can grow past localStorage limits. Use <strong>My Library → Export JSON</strong> for backups and to migrate to another device.</p>
-    </div>
-    <div class="settings-card">
-      <h3>About</h3>
-      <p>Canvas Study App — AI assistant with live Canvas data, web search, color-coded calendar, and calendar export (.ics works with Google Calendar, Apple Calendar, and Outlook).</p>
-      <div class="settings-row">
-        <div><label>Proxy server</label><small>python3 canvas-proxy.py must be running</small></div>
-        <div id="proxyStatus" style="font-size:12px;color:var(--muted2)">—</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- PLANNER -->
-<div class="page" id="plannerPage">
-  <div class="planner-wrap">
-    <div class="planner-toolbar">
-      <div class="planner-nav">
-        <button onclick="changeWeek(-1)">&#8592;</button>
-        <div class="planner-week-label" id="plannerWeekLabel"></div>
-        <button onclick="changeWeek(1)">&#8594;</button>
-      </div>
-      <button class="planner-this-week" onclick="goThisWeek()">This Week</button>
-      <div style="font-size:12px;color:var(--muted);margin-left:0.5rem" id="plannerAssignmentCount"></div>
-      <button id="aiPlanBtn" onclick="aiPlanWeek()" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:0.5px solid var(--gold);background:rgba(212,160,23,0.08);color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--gold)"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 4.5v3.25l2.5 1.5-.75 1.25-3-1.75V5.5h1.25z"/></svg>
-        AI Plan My Week
-      </button>
-      <div class="planner-view-toggle" style="margin-left:auto">
-        <button class="planner-view-btn active" id="pvGrid" onclick="setPlannerView('grid')">Grid</button>
-        <button class="planner-view-btn" id="pvTID" onclick="setPlannerView('tid')">TID Cards</button>
-      </div>
-    </div>
-
-    <!-- HOURS CALCULATOR -->
-    <div class="hours-calc" id="hoursCalc">
-      <div class="hours-calc-title">⏱ Weekly Hours Calculator (168 hrs/week)</div>
-      <div class="hours-row">
-        168 hrs &minus;
-        <input type="number" id="hrsSleep" value="56" min="0" max="100" oninput="calcHours()" title="Hours of sleep"/>
-        <span>sleep &minus;</span>
-        <input type="number" id="hrsClass" value="15" min="0" max="80" oninput="calcHours()" title="Hours in class"/>
-        <span>class &minus;</span>
-        <input type="number" id="hrsStudy" value="20" min="0" max="80" oninput="calcHours()" title="Hours studying"/>
-        <span>study &minus;</span>
-        <input type="number" id="hrsWork" value="0" min="0" max="80" oninput="calcHours()" title="Hours working"/>
-        <span>work &equals;</span>
-        <span class="hours-result" id="hrsResult">77 hrs free</span>
-      </div>
-    </div>
-
-    <div class="planner-body" id="plannerBody">
-
-      <!-- GRID VIEW -->
-      <div id="plannerGridView">
-        <div class="grid-section">
-          <div class="grid-outer">
-            <div class="planner-grid" id="plannerGrid"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TID VIEW (hidden by default) -->
-      <div id="plannerTIDView" style="display:none;padding:0 1.25rem 1rem">
-        <div class="tid-title">TID — Today I'll Do It</div>
-        <div class="tid-outer">
-          <div class="tid-grid" id="tidGrid"></div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- TID cards always shown below grid -->
-    <div class="tid-section" id="tidSection">
-      <div class="tid-title">TID — Today I'll Do It &nbsp;<span style="font-size:11px;color:var(--muted2);font-weight:400">A = Must Do &nbsp; B = Should Do &nbsp; C = Nice to Do</span></div>
-      <div class="tid-outer">
-        <div class="tid-grid" id="tidGridBottom"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- BLOCK EDITOR MODAL -->
-<div class="modal-overlay" id="blockModalOverlay" onclick="maybeCloseBlockModal(event)">
-  <div class="block-modal">
-    <button class="modal-close" onclick="closeBlockModal()">×</button>
-    <h3 id="blockModalTitle">Add Block</h3>
-    <input type="hidden" id="bmDay"/>
-    <input type="hidden" id="bmSlot"/>
-    <input type="hidden" id="bmId"/>
-    <div class="field">
-      <label>Title</label>
-      <input type="text" id="bmText" placeholder="e.g. Study for exam, Review notes…" onkeydown="if(event.key==='Enter')saveBlock()"/>
-    </div>
-    <div class="field">
-      <label>Duration</label>
-      <select id="bmDuration">
-        <option value="1">30 min</option>
-        <option value="2" selected>1 hour</option>
-        <option value="3">1.5 hours</option>
-        <option value="4">2 hours</option>
-        <option value="6">3 hours</option>
-        <option value="8">4 hours</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Color</label>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input type="color" id="bmColor" value="#1a2744" style="width:36px;height:28px;padding:2px;border-radius:6px;border:0.5px solid var(--border);cursor:pointer"/>
-        <div style="display:flex;gap:5px;flex-wrap:wrap" id="bmColorPresets"></div>
-      </div>
-    </div>
-    <div class="field" id="bmCourseField">
-      <label>Course (optional)</label>
-      <select id="bmCourse">
-        <option value="">— None —</option>
-      </select>
-    </div>
-    <div class="block-modal-actions">
-      <button class="bm-btn danger" id="bmDeleteBtn" onclick="deleteBlock()" style="display:none">Delete</button>
-      <button class="bm-btn" onclick="closeBlockModal()">Cancel</button>
-      <button class="bm-btn primary" onclick="saveBlock()">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL -->
-<div class="modal-overlay" id="modalOverlay" onclick="maybeCloseModal(event)">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal()">×</button>
-    <div class="modal-title" id="modalTitle"></div>
-    <div class="modal-course-line" id="modalCourse"></div>
-    <div class="modal-body" id="modalBody"></div>
-    <div class="modal-actions" id="modalActions"></div>
-  </div>
-</div>
-
-<!-- Unified content viewer (assignments, quizzes, pages, files, library) -->
-<div class="content-viewer-overlay" id="fileViewerOverlay" onclick="if(event.target===this)closeFileViewer()">
-  <div class="content-viewer-panel" onclick="event.stopPropagation()">
-    <button class="modal-close" style="position:absolute;top:10px;right:10px;z-index:2" onclick="closeFileViewer()">×</button>
-    <div class="cv-head">
-      <div><span id="fvTitle"></span><span id="cvTypeBadge" class="cv-badge"></span></div>
-    </div>
-    <div id="cvMetaLine" class="cv-meta"></div>
-    <div id="cvQuizMeta" class="cv-meta" style="display:none;border-top:0"></div>
-    <div class="mat-split" style="flex:1;min-height:0;border-top:0.5px solid var(--border)">
-      <div id="cvSideMeta" style="display:none;flex:0 0 200px;border-right:0.5px solid var(--border);padding:10px;font-size:11px;color:var(--muted);overflow-y:auto;background:var(--soft)"></div>
-      <div id="fvBody" class="cv-body-scroll file-content-view"></div>
-    </div>
-    <div class="cv-actions">
-      <span id="cvLibHint" style="font-size:11px;color:var(--muted2);flex:1"></span>
-      <button type="button" id="fvEditBtn" class="modal-btn" style="display:none" onclick="toggleFileEdit()">Edit</button>
-      <button type="button" id="fvSaveBtn" class="modal-btn primary" style="display:none" onclick="saveFileEdit()">Save</button>
-      <button type="button" class="modal-btn primary" onclick="saveViewerToLibraryAction()">Save to Library</button>
-      <button type="button" class="modal-btn" onclick="refreshViewerFromCanvas()">Refresh from Canvas</button>
-      <button type="button" class="modal-btn" onclick="openCanvasViewerUrl()">Open in Canvas</button>
-      <button type="button" class="modal-btn" onclick="downloadCurrentViewerFile()">Download</button>
-      <button type="button" class="modal-btn" onclick="askAssistantAboutViewer()">Ask Assistant</button>
-      <button type="button" class="modal-btn" onclick="studyTutorAboutViewer()">Study with Tutor</button>
-    </div>
-  </div>
-</div>
-
-<script>
 // ── STATE ──────────────────────────────────────────────────────────────────
 const PROXY='http://127.0.0.1:3001';
 const STORE_KEY='canvasStudyApp_v2';
@@ -818,24 +17,69 @@ let viewerCtx=null,viewerLoad=null;
 let tutorChatHistory=[],lastReplySources=[],isTutorLoading=false;
 let libDbPromise=null;
 
-// ── STORAGE ────────────────────────────────────────────────────────────────
-function saveCredentials(){
-  if(!document.getElementById('rememberMe')?.checked)return;
+// ── STORAGE (extension: background proxy + chrome.storage.local) ───────────
+async function saveCredentials(opts={}){
+  const remember=document.getElementById('rememberMe')?.checked!==false;
+  if(!remember&&!opts.force)return;
+  const payload={
+    canvasDomain,canvasToken,anthropicKey,courseColors,
+    rememberMe:true,lastConnectedAt:Date.now()
+  };
+  if(window.__CS_EXT__){
+    try{await extSaveLogin(payload);}catch(e){}
+    return;
+  }
   try{localStorage.setItem(STORE_KEY,JSON.stringify({domain:canvasDomain,token:canvasToken,anthropicKey,courseColors}));}catch(e){}
 }
-function loadCredentials(){try{const r=localStorage.getItem(STORE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
-function clearSaved(){localStorage.removeItem(STORE_KEY);location.reload();}
+async function loadCredentials(){
+  if(window.__CS_EXT__){
+    try{
+      const r=await extLoadLogin();
+      if(r.canvasDomain||r.canvasToken){
+        return{
+          domain:r.canvasDomain,token:r.canvasToken,
+          anthropicKey:r.anthropicKey,courseColors:r.courseColors,
+          rememberMe:r.rememberMe!==false
+        };
+      }
+    }catch(e){}
+    return null;
+  }
+  try{const r=localStorage.getItem(STORE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}
+}
+async function clearSaved(){
+  if(window.__CS_EXT__){
+    try{await extClearLogin();}catch(e){}
+  }else localStorage.removeItem(STORE_KEY);
+  location.reload();
+}
+function getUrlDomainParam(){
+  try{return new URLSearchParams(location.search).get('domain')||'';}catch(e){return '';}
+}
 
 // ── INIT ───────────────────────────────────────────────────────────────────
-window.addEventListener('load',()=>{
-  const saved=loadCredentials();
-  if(saved?.domain&&saved?.token&&saved?.anthropicKey){
+window.addEventListener('load',async()=>{
+  if(window.__CS_EXT__){
+    document.documentElement.classList.add('cs-ext-panel');
+    const hint=document.getElementById('credStorageHint');
+    if(hint)hint.textContent='Saved by the extension background proxy (chrome.storage.local)';
+  }
+  const urlDomain=getUrlDomainParam();
+  if(urlDomain){
+    const domEl=document.getElementById('domain');
+    if(!domEl.value)domEl.value=normalizeCanvasDomain(urlDomain);
+    domEl.title='Auto-detected from this Canvas tab — edit if Connect fails';
+  }
+  const saved=await loadCredentials();
+  if(saved?.rememberMe!==false)document.getElementById('rememberMe').checked=true;
+  if(saved?.domain&&saved?.token){
     document.getElementById('savedBadge').style.display='flex';
-    document.getElementById('domain').value=saved.domain;
+    if(!urlDomain)document.getElementById('domain').value=saved.domain;
     document.getElementById('token').value=saved.token;
-    document.getElementById('anthropicKey').value=saved.anthropicKey;
+    if(saved.anthropicKey)document.getElementById('anthropicKey').value=saved.anthropicKey;
     if(saved.courseColors)courseColors=saved.courseColors;
-    setTimeout(()=>connect(true),600);
+    canvasDomain=saved.domain;canvasToken=saved.token;anthropicKey=saved.anthropicKey||'';
+    setTimeout(()=>connect(true),500);
   }
   checkProxy();
   attachCanvasSmartLinks('messages');
@@ -844,6 +88,17 @@ window.addEventListener('load',()=>{
 
 async function checkProxy(){
   const el=document.getElementById('proxyStatus');if(!el)return;
+  if(window.__CS_EXT__){
+    try{
+      const r=await extSendMessage({type:'PROXY_HEALTH'});
+      if(r?.ok){el.textContent='Background proxy ready';el.style.color='var(--green)';}
+      else throw new Error('no');
+    }catch(e){
+      el.textContent='Background proxy offline — reload extension';
+      el.style.color='var(--rust)';
+    }
+    return;
+  }
   try{
     const r=await fetch(PROXY+'/proxy-health',{cache:'no-store'});
     if(!r.ok)throw new Error('HTTP '+r.status);
@@ -864,37 +119,16 @@ function showPage(pageId,btn){
   if(btn)btn.classList.add('active');
 }
 
-// ── CANVAS API ─────────────────────────────────────────────────────────────
-function normalizeCanvasDomain(raw){
-  let d=(raw||'').trim().replace(/^https?:\/\//i,'').replace(/\/+$/,'');
-  const slash=d.indexOf('/');
-  if(slash>0)d=d.slice(0,slash);
-  return d.toLowerCase();
-}
-function normalizeCanvasToken(raw){
-  let t=(raw||'').trim().replace(/^["']|["']$/g,'');
-  if(/^bearer\s+/i.test(t))t=t.replace(/^bearer\s+/i,'').trim();
-  return t;
-}
-async function canvasFetch(path){
-  const r=await fetch(PROXY+path,{headers:{'Authorization':`Bearer ${canvasToken}`,'X-Canvas-Domain':canvasDomain}});
-  let body=null;
-  try{body=await r.json();}catch(e){body=null;}
-  if(!r.ok){
-    const detail=body?.errors?.[0]?.message||body?.message||'';
-    if(r.status===401){
-      throw new Error(
-        'Canvas rejected your login (401 Unauthorized). Usually the access token is wrong, expired, or copied with extra text. '+
-        'Create a new token: Canvas → Account → Settings → New Access Token (no expiry unless you choose one). '+
-        'Paste only the token (not "Bearer"). Domain should match your school URL, e.g. <strong>yourschool.instructure.com</strong> — no https://.'+
-        (detail?'<br/><br/>Canvas says: '+detail:'')
-      );
-    }
-    throw new Error(`Canvas ${r.status}${detail?': '+detail:''}`);
+// ── CANVAS API (extension → background proxy; standalone → python proxy) ───
+async function proxyGet(path){
+  if(window.__CS_EXT__){
+    const r=await extProxyRequest(path,{domain:canvasDomain,token:canvasToken});
+    return r.json;
   }
-  return body;
+  const r=await fetch(PROXY+path,{headers:{'Authorization':`Bearer ${canvasToken}`,'X-Canvas-Domain':canvasDomain}});
+  if(!r.ok)throw new Error(`Canvas ${r.status}`);
+  return r.json();
 }
-async function proxyGet(path){return canvasFetch(path);}
 function parseLinkNext(linkHeader){
   if(!linkHeader)return null;
   const parts=linkHeader.split(',');
@@ -911,20 +145,36 @@ async function proxyGetAll(path,maxPages=25){
   const out=[];
   let guard=0;
   while(next&&guard++<maxPages){
-    const r=await fetch(PROXY+next,{headers:{'Authorization':`Bearer ${canvasToken}`,'X-Canvas-Domain':canvasDomain}});
-    let chunk=null;
-    try{chunk=await r.json();}catch(e){chunk=null;}
-    if(!r.ok){
-      const detail=chunk?.errors?.[0]?.message||chunk?.message||'';
-      if(r.status===401)throw new Error('Canvas 401: invalid or expired token. Create a new access token in Canvas Settings.');
-      throw new Error(`Canvas ${r.status}${detail?': '+detail:''}`);
+    let chunk,link;
+    if(window.__CS_EXT__){
+      const r=await extProxyRequest(next,{domain:canvasDomain,token:canvasToken});
+      chunk=r.json;
+      link=r.link||'';
+    }else{
+      const r=await fetch(PROXY+next,{headers:{'Authorization':`Bearer ${canvasToken}`,'X-Canvas-Domain':canvasDomain}});
+      if(!r.ok)throw new Error(`Canvas ${r.status}`);
+      chunk=await r.json();
+      link=r.headers.get('Link')||'';
     }
-    const link=r.headers.get('Link')||'';
     next=parseLinkNext(link);
     if(Array.isArray(chunk))out.push(...chunk);
     else return chunk;
   }
   return out;
+}
+
+async function fetchActiveCourses(){
+  const paths=[
+    '/api/v1/courses?enrollment_state=active&per_page=30&include[]=total_scores',
+    '/api/v1/courses?enrollment_state=active&per_page=30'
+  ];
+  for(const p of paths){
+    try{
+      const data=await proxyGet(p);
+      if(Array.isArray(data))return data;
+    }catch(e){if(p===paths[paths.length-1])throw e;}
+  }
+  throw new Error('Canvas returned an unexpected response. Check domain and token.');
 }
 
 async function connect(silent=false){
@@ -934,29 +184,50 @@ async function connect(silent=false){
   document.getElementById('domain').value=domain;
   document.getElementById('token').value=token;
   document.getElementById('errMsg').style.display='none';
-  if(!domain||!token||!aKey){if(!silent)showErr('Please fill in all three fields.');return;}
-  canvasDomain=domain;canvasToken=token;anthropicKey=aKey;
+  if(!domain||!token){
+    if(!silent)showErr('Canvas domain and access token are required.');
+    return;
+  }
+  canvasDomain=domain;
+  canvasToken=token;
+  anthropicKey=aKey;
   const btn=document.getElementById('connectBtn');
-  btn.disabled=true;btn.textContent='Connecting…';
+  btn.disabled=true;
+  btn.textContent='Connecting…';
   document.getElementById('dot').className='status-dot loading';
   try{
-    const[fetchedCourses,self]=await Promise.all([
-      proxyGet('/api/v1/courses?enrollment_state=active&per_page=30&include[]=total_scores'),
-      proxyGet('/api/v1/users/self')
-    ]);
+    await saveCredentials({force:true});
+    btn.textContent='Verifying Canvas…';
+    const self=await proxyGet('/api/v1/users/self');
+    if(!self?.id)throw new Error('Canvas login failed — no user profile returned.');
+    btn.textContent='Loading courses…';
+    const fetchedCourses=await fetchActiveCourses();
     courses=fetchedCourses.filter(c=>c.name&&!c.access_restricted_by_date);
     courses.forEach((c,i)=>{if(!courseColors[c.id])courseColors[c.id]=COLORS[i%COLORS.length];});
     visibleCourseIds=new Set(courses.map(c=>c.id));
-    await loadAllAssignments();
-    saveCredentials();
     buildUI(self);
     buildCalendar();
     buildSettings(self);
+    btn.disabled=false;
+    btn.textContent='Connected';
+    if(!aKey&&!silent){
+      showErr('Connected to Canvas. Add an Anthropic API key above to use AI chat and tutor.');
+      document.getElementById('errMsg').style.color='#92400e';
+      document.getElementById('errMsg').style.background='#fffbeb';
+    }
+    loadAllAssignments().catch(()=>{});
   }catch(e){
-    let msg=e.message;
-    if(msg.includes('fetch')||msg.includes('Failed'))msg='Cannot reach proxy at '+PROXY+'. Run: python canvas-proxy.py   If loading from file:// still fails: python -m http.server 8080 --bind 127.0.0.1 next to canvas-app.html, then open http://127.0.0.1:8080/canvas-app.html';
+    let msg=e.message||String(e);
+    if(/fetch|Failed|NetworkError|network/i.test(msg)){
+      msg=window.__CS_EXT__
+        ?'Could not reach Canvas. Confirm domain (e.g. yourschool.instructure.com), create a new access token, and reload the extension.'
+        :('Cannot reach proxy at '+PROXY+'. Run: python canvas-proxy.py');
+    }
     showErr(msg);
-    btn.disabled=false;btn.textContent='Connect to Canvas';
+    document.getElementById('errMsg').style.color='';
+    document.getElementById('errMsg').style.background='';
+    btn.disabled=false;
+    btn.textContent='Connect to Canvas';
     document.getElementById('dot').className='status-dot off';
     document.getElementById('savedBadge').style.display='none';
   }
@@ -1002,14 +273,14 @@ function buildCourseSidebar(){
   const allEl=document.createElement('div');
   allEl.className='course-item active';
   allEl.innerHTML=`<div class="course-dot" style="background:var(--navy)"></div><div><div class="cname">All Courses</div></div>`;
-  allEl.onclick=()=>selectCourse(null,allEl);
+  allEl.data-cs-onclick=()=>selectCourse(null,allEl);
   list.appendChild(allEl);
   courses.forEach(c=>{
     const el=document.createElement('div');
     el.className='course-item';
     el.setAttribute('data-course-id',c.id);
     el.innerHTML=`<div class="course-dot" style="background:${courseColors[c.id]}"></div><div><div class="cname">${c.name}</div><div class="ccode">${c.course_code||''}</div></div>`;
-    el.onclick=()=>selectCourse(c,el);
+    el.data-cs-onclick=()=>selectCourse(c,el);
     list.appendChild(el);
   });
 }
@@ -1055,9 +326,9 @@ function buildCalFilters(){
     const row=document.createElement('div');
     row.className='cal-course-row';
     row.innerHTML=`
-      <input type="checkbox" id="cf-${c.id}" checked onchange="toggleCourse(${c.id},this.checked)"/>
+      <input type="checkbox" id="cf-${c.id}" checked data-cs-onchange="toggleCourse(${c.id},this.checked)"/>
       <div class="color-swatch" style="background:${courseColors[c.id]}" title="Click to change color">
-        <input type="color" value="${courseColors[c.id]}" onchange="changeCourseColor(${c.id},this.value)"/>
+        <input type="color" value="${courseColors[c.id]}" data-cs-onchange="changeCourseColor(${c.id},this.value)"/>
       </div>
       <label class="cal-course-label" for="cf-${c.id}" title="${c.name}">${c.course_code||c.name}</label>`;
     el.appendChild(row);
@@ -1122,7 +393,7 @@ function renderMonthGrid(){
     html+=`<div class="cal-day${isToday?' today':''}">`;
     html+=`<div class="day-num">${d}</div>`;
     dayEvts.slice(0,maxShow).forEach(a=>{
-      html+=`<div class="day-event" style="background:${a.color}" onclick="openEventModal(${a.id})" title="${a.name}">${a.name}</div>`;
+      html+=`<div class="day-event" style="background:${a.color}" data-cs-onclick="openEventModal(${a.id})" title="${a.name}">${a.name}</div>`;
     });
     if(dayEvts.length>maxShow)html+=`<div class="day-more">+${dayEvts.length-maxShow} more</div>`;
     html+=`</div>`;
@@ -1150,7 +421,7 @@ function renderListView(){
     evts.forEach(a=>{
       const time=new Date(a.due_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
       const pts=a.points_possible?`${a.points_possible} pts`:'';
-      html+=`<div class="list-event-row" onclick="openEventModal(${a.id})">
+      html+=`<div class="list-event-row" data-cs-onclick="openEventModal(${a.id})">
         <div class="list-dot" style="background:${a.color}"></div>
         <div class="list-info"><div class="list-name">${a.name}</div><div class="list-course">${a.course_name}</div></div>
         <div class="list-time">${time}</div>
@@ -1185,11 +456,11 @@ function openEventModal(id){
     ${alreadySubmitted
       ? '<span style="font-size:12px;color:var(--green);padding:6px 0;display:flex;align-items:center;gap:4px">✓ Already Submitted</span>'
       : `<a class="submit-link" href="${submitUrl}" target="_blank">📤 Submit Assignment</a>`}
-    <button type="button" class="modal-btn primary" onclick="viewCurrentEventCanvasContent()">View content</button>
+    <button type="button" class="modal-btn primary" data-cs-onclick="viewCurrentEventCanvasContent()">View content</button>
     <a class="modal-btn" href="${submitUrl}" target="_blank">🔗 Open in Canvas</a>
     <a class="modal-btn" href="${gcalUrl}" target="_blank">📅 Add to Calendar</a>
-    <button class="modal-btn" onclick="downloadSingleICS()">Download .ics</button>
-    <button class="modal-btn" onclick="closeModal()">Close</button>`;
+    <button class="modal-btn" data-cs-onclick="downloadSingleICS()">Download .ics</button>
+    <button class="modal-btn" data-cs-onclick="closeModal()">Close</button>`;
   document.getElementById('modalOverlay').classList.add('open');
 }
 
@@ -1268,7 +539,7 @@ function buildSettings(self){
     const row=document.createElement('div');
     row.className='color-settings-row';
     row.innerHTML=`<label><div class="color-swatch color-swatch-inline" data-id="${c.id}" style="background:${courseColors[c.id]};width:18px;height:18px;display:inline-block;border-radius:50%;border:2px solid rgba(0,0,0,0.1);position:relative;cursor:pointer">
-      <input type="color" value="${courseColors[c.id]}" onchange="changeCourseColor(${c.id},this.value)" style="position:absolute;opacity:0;inset:0;cursor:pointer;width:100%;height:100%;border:none;padding:0"/></div>
+      <input type="color" value="${courseColors[c.id]}" data-cs-onchange="changeCourseColor(${c.id},this.value)" style="position:absolute;opacity:0;inset:0;cursor:pointer;width:100%;height:100%;border:none;padding:0"/></div>
       ${c.name}</label><small style="font-size:11px;color:var(--muted)">${c.course_code||''}</small>`;
     el.appendChild(row);
   });
@@ -1736,7 +1007,7 @@ function initMaterialsPage(){
     const el=document.createElement('div');
     el.className='course-item';
     el.innerHTML=`<div class="course-dot" style="background:${courseColors[c.id]||'#3b82f6'}"></div><div><div class="cname">${c.name}</div><div class="ccode">${c.course_code||''}</div></div>`;
-    el.onclick=()=>loadMaterialsCourse(c,el);
+    el.data-cs-onclick=()=>loadMaterialsCourse(c,el);
     list.appendChild(el);
   });
 }
@@ -1810,7 +1081,7 @@ function renderMaterialsCards(items){
     const kindLabel=it.matKind==='quiz'?(it.classify==='exam'?'Exam':'Quiz'):it.matKind==='assignment'?'Assignment':it.matKind==='page'?'Page':'File';
     const icon=it.matKind==='quiz'?'📝':it.matKind==='assignment'?'📌':fileIcon(it);
     card.innerHTML=`<div class="file-card-icon">${icon}</div><div class="file-card-name">${it.name}</div><div class="file-card-meta">${kindLabel}${it.points?` · ${it.points} pts`:''}${updated?' · '+updated:''}</div>`;
-    card.onclick=()=>openMaterialsItem(it);
+    card.data-cs-onclick=()=>openMaterialsItem(it);
     grid.appendChild(card);
   });
 }
@@ -1832,14 +1103,14 @@ function renderModulesTree(){
     const hdr=document.createElement('div');
     hdr.className='mod-name';
     hdr.innerHTML=`<span>${mod.name||'Module'}</span><span>▾</span>`;
-    hdr.onclick=()=>blk.classList.toggle('expanded');
+    hdr.data-cs-onclick=()=>blk.classList.toggle('expanded');
     const itemsDiv=document.createElement('div');
     itemsDiv.className='mod-items';
     (mod.items||[]).slice().sort((a,b)=>((a.position??0)-(b.position??0))).forEach(mi=>{
       const row=document.createElement('div');
       row.className='mod-item';
       row.textContent=`${mi.type||'?'}: ${mi.title||''}`;
-      row.onclick=e=>{e.stopPropagation();openModuleItem(mi);};
+      row.data-cs-onclick=e=>{e.stopPropagation();openModuleItem(mi);};
       itemsDiv.appendChild(row);
     });
     blk.appendChild(hdr);
@@ -2165,7 +1436,7 @@ async function refreshLibraryList(){
     const card=document.createElement('div');
     card.className='mat-card';
     card.innerHTML=`<div class="file-card-icon">📚</div><div class="file-card-name">${r.title}</div><div class="file-card-meta">${r.type} · ${r.courseName||''}</div>`;
-    card.onclick=()=>openContentViewer({type:'library',recordId:r.id});
+    card.data-cs-onclick=()=>openContentViewer({type:'library',recordId:r.id});
     grid.appendChild(card);
   });
   renderTutorPinPicker(items);
@@ -2181,7 +1452,7 @@ function renderTutorPinPicker(items){
     pin.type='button';
     pin.className='small-btn';
     pin.textContent=tutorPinnedLibraryIds.includes(r.id)?'✓':'＋';
-    pin.onclick=e=>{e.stopPropagation();toggleTutorPin(r.id);};
+    pin.data-cs-onclick=e=>{e.stopPropagation();toggleTutorPin(r.id);};
     row.innerHTML=`<span style="overflow:hidden;text-overflow:ellipsis">${r.title.slice(0,42)}</span>`;
     row.insertBefore(pin,row.firstChild);
     el.appendChild(row);
@@ -2204,7 +1475,7 @@ function renderTutorPinsStrip(){
       chip.className='tutor-pin';
       const lab=document.createElement('span');lab.textContent=r.title.slice(0,48);
       const btn=document.createElement('button');btn.type='button';btn.setAttribute('aria-label','Remove pin');btn.textContent='×';
-      btn.onclick=()=>toggleTutorPin(id);
+      btn.data-cs-onclick=()=>toggleTutorPin(id);
       chip.appendChild(lab);chip.appendChild(btn);
       strip.appendChild(chip);
     });
@@ -2481,7 +1752,7 @@ function buildGrid(wd, today, weekAssignments) {
 
     dayDates.forEach((d,di) => {
       const isToday = d.toDateString() === today.toDateString();
-      html += `<div class="grid-cell${isHour?' hour-mark':''}${isToday?' today-col':''}" data-day="${di}" data-slot="${s}" onclick="cellClick(${di},${s})"></div>`;
+      html += `<div class="grid-cell${isHour?' hour-mark':''}${isToday?' today-col':''}" data-day="${di}" data-slot="${s}" data-cs-onclick="cellClick(${di},${s})"></div>`;
     });
   }
 
@@ -2578,11 +1849,11 @@ function buildTID(elId, wd, today, wk) {
     const addRow = document.createElement('div');
     addRow.className = 'tid-add-row';
     addRow.innerHTML = `
-      <input class="tid-add-inp" id="tid-inp-${elId}-${d}" placeholder="Add task…" onkeydown="if(event.key==='Enter')addTIDTask('${elId}',${d},'${wk}')"/>
+      <input class="tid-add-inp" id="tid-inp-${elId}-${d}" placeholder="Add task…" data-cs-onkeydown="if(event.key==='Enter')addTIDTask('${elId}',${d},'${wk}')"/>
       <select class="tid-priority-sel" id="tid-pri-${elId}-${d}">
         <option value="A">A</option><option value="B" selected>B</option><option value="C">C</option>
       </select>
-      <button class="tid-add-btn" onclick="addTIDTask('${elId}',${d},'${wk}')">+</button>`;
+      <button class="tid-add-btn" data-cs-onclick="addTIDTask('${elId}',${d},'${wk}')">+</button>`;
     tasksEl.appendChild(addRow);
     card.appendChild(tasksEl);
 
@@ -2590,7 +1861,7 @@ function buildTID(elId, wd, today, wk) {
     const refEl = document.createElement('div');
     refEl.className = 'tid-reflection';
     refEl.innerHTML = `<div class="tid-reflection-label">Reflection</div>
-      <textarea id="tid-ref-${elId}-${d}" placeholder="What went well? Where did I stray? How can I improve?" onchange="saveTIDReflection('${elId}',${d},'${wk}')">${tid.reflection||''}</textarea>`;
+      <textarea id="tid-ref-${elId}-${d}" placeholder="What went well? Where did I stray? How can I improve?" data-cs-onchange="saveTIDReflection('${elId}',${d},'${wk}')">${tid.reflection||''}</textarea>`;
     card.appendChild(refEl);
 
     grid.appendChild(card);
@@ -2602,10 +1873,10 @@ function buildTaskRow(task, taskIndex, day, elId, wk) {
   row.className = 'tid-task-row';
   row.id = `tid-task-${elId}-${day}-${taskIndex}`;
   row.innerHTML = `
-    <input type="checkbox" ${task.done?'checked':''} onchange="toggleTIDTask('${elId}',${day},${taskIndex},'${wk}')"/>
+    <input type="checkbox" ${task.done?'checked':''} data-cs-onchange="toggleTIDTask('${elId}',${day},${taskIndex},'${wk}')"/>
     <span class="tid-priority ${task.priority}">${task.priority}</span>
     <span class="tid-task-text${task.done?' done':''}" title="${task.text}">${task.text}</span>
-    <button onclick="deleteTIDTask('${elId}',${day},${taskIndex},'${wk}')" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:12px;padding:0 2px;flex-shrink:0" title="Remove">×</button>`;
+    <button data-cs-onclick="deleteTIDTask('${elId}',${day},${taskIndex},'${wk}')" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:12px;padding:0 2px;flex-shrink:0" title="Remove">×</button>`;
   return row;
 }
 
@@ -2929,36 +2200,3 @@ RULES:
 
   aiPlanRunning = false;
 }
-
-</script>
-
-<!-- AI PLANNER MODAL -->
-<div class="modal-overlay" id="aiPlanModal" onclick="if(event.target===this&&!aiPlanRunning)closeAIPlanModal()">
-  <div class="modal" style="max-width:500px">
-    <button class="modal-close" onclick="if(!aiPlanRunning)closeAIPlanModal()">×</button>
-    <div class="modal-title">✨ AI Weekly Planner</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.6">Tell Claude how you want your week structured. It will read your Canvas assignments and build a study schedule with time blocks and TID task cards.</div>
-    <div class="field" style="margin-bottom:0.75rem">
-      <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase">Your preferences / instructions</label>
-      <textarea id="aiPlanPrompt" rows="4" style="width:100%;padding:9px 11px;border:0.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--text);background:var(--soft);outline:none;resize:vertical;line-height:1.5" placeholder="e.g. I prefer studying in the mornings. Don't schedule anything before 9am. Leave Friday evenings free. Prioritize the assignments due soonest. Add review sessions after each class."></textarea>
-    </div>
-    <div class="field" style="margin-bottom:1rem">
-      <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase">Replace existing blocks?</label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer">
-        <input type="checkbox" id="aiPlanReplace" checked style="accent-color:var(--navy)"/>
-        Clear current week's blocks before adding AI schedule
-      </label>
-    </div>
-    <div id="aiPlanStatus" style="display:none;font-size:12px;color:var(--muted);padding:8px 10px;background:var(--soft);border-radius:6px;margin-bottom:1rem;line-height:1.6"></div>
-    <div style="display:flex;gap:8px">
-      <button onclick="if(!aiPlanRunning)closeAIPlanModal()" style="flex:1;padding:10px;border-radius:8px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer">Cancel</button>
-      <button id="aiPlanGo" onclick="runAIPlan()" style="flex:2;padding:10px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.5 7.5l-5 3V5.5l5 3z"/></svg>
-        Generate My Schedule
-      </button>
-    </div>
-  </div>
-</div>
-
-</body>
-</html>
